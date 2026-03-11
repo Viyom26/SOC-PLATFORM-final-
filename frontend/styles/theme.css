@@ -1,0 +1,918 @@
+:root {
+  --bg-light: #f3f6fb;
+  --bg-dark: #0b1220;
+
+  --text-light: #0f172a;
+  --text-dark: #e5e7eb;
+}
+
+/* ===== BODY THEMES ===== */
+
+body.light {
+  background: var(--bg-light);
+  color: var(--text-light);
+}
+
+body.dark {
+  background: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* ===== MAIN CONTENT ===== */
+
+.main-content {
+  overflow-y: auto;
+  padding-bottom: 60px;
+  flex: 1;
+}
+
+/* ===== TOPBAR ===== */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 30px;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+body.light .topbar {
+  background: rgba(255,255,255,0.8);
+}
+
+body.dark .topbar {
+  background: rgba(15,20,35,0.8);
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.navlinks a {
+  margin-right: 18px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+body.light .navlinks a {
+  color: #0f172a;
+}
+
+body.dark .navlinks a {
+  color: #e5e7eb;
+}
+
+.theme-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 40px;
+  backdrop-filter: blur(20px);
+}
+
+body.light .topbar {
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+body.dark .topbar {
+  background: rgba(15,23,42,0.85);
+  box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.navlinks a {
+  margin-right: 20px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+body.dark .navlinks a {
+  color: #e5e7eb;
+}
+
+body.light .navlinks a {
+  color: #111827;
+}
+
+.theme-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+}
+.theme-btn:hover {
+  background: #2563eb;
+}
+
+/* ================= TOPBAR FIX ================= */
+
+.logo {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+}
+
+/* Light mode logo */
+body.light .logo {
+  color: #0f172a;   /* dark navy */
+}
+
+/* Dark mode logo */
+body.dark .logo {
+  color: #ffffff;
+}
+
+/* Nav link visibility */
+body.light .navlinks a {
+  color: #1e293b;
+}
+
+body.dark .navlinks a {
+  color: #e5e7eb;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 40px;
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+body.light .topbar {
+  background: rgba(255,255,255,0.85);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+body.dark .topbar {
+  background: rgba(15,23,42,0.85);
+  border-bottom: 1px solid #1f2937;
+}
+
+/* ===== ENTERPRISE TOPBAR ===== */
+
+.topbar.enterprise {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 40px;
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+body.dark .topbar.enterprise {
+  background: rgba(10,15,25,0.8);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+body.light .topbar.enterprise {
+  background: rgba(255,255,255,0.8);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.logo span {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.navlinks a {
+  margin: 0 12px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+body.dark .navlinks a {
+  color: #e5e7eb;
+}
+
+body.light .navlinks a {
+  color: #111827;
+}
+
+.theme-btn,
+.logout-btn {
+  margin-left: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.logout-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+.theme-btn {
+  background: #3b82f6;
+  color: white;
+}
+.theme-btn:hover {
+  background: #2563eb;
+}
+
+.navlinks a {
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+
+.navlinks a:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.active-link {
+  background: #2563eb;
+  color: white !important;
+  font-weight: 600;
+}
+
+/* =====================================================
+   ENTERPRISE DARK MODE SYSTEM
+===================================================== */
+
+body.dark {
+  background: linear-gradient(135deg, #0b1220, #0f172a);
+  color: #e2e8f0;
+}
+
+/* MAIN CONTENT */
+body.dark .main-content {
+  background: transparent;
+}
+
+/* CARDS */
+body.dark .ip-card,
+body.dark .history-container,
+body.dark .result-card,
+body.dark .chart-card,
+body.dark .map-card {
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+}
+
+/* HEADINGS */
+body.dark h1,
+body.dark h2,
+body.dark h3 {
+  color: #ffffff;
+}
+
+/* INPUTS */
+body.dark input {
+  background: #1e293b;
+  color: #ffffff;
+  border: 1px solid #334155;
+}
+
+body.dark input::placeholder {
+  color: #94a3b8;
+}
+
+/* BUTTON */
+body.dark button {
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+}
+
+/* Timeline items */
+body.dark .timeline-item {
+  background: #1f2937;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+}
+
+/* Badges */
+body.dark .badge-blue {
+  background: #1d4ed8;
+}
+body.dark .badge-red {
+  background: #b91c1c;
+}
+body.dark .badge-green {
+  background: #15803d;
+}
+body.dark .badge-gray {
+  background: #374151;
+}
+
+/* =====================================================
+   DARK MODE TIMELINE FIX
+===================================================== */
+
+body.dark .timeline-item {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  transition: 0.2s ease;
+}
+
+body.dark .timeline-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+body.dark .timeline-item .timeline-content {
+  display: flex;
+  flex-direction: column;
+}
+
+body.dark .timeline-item .ip-address {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+body.dark .timeline-item .timestamp {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* =====================================================
+   DARK MODE PAGE TITLE GLOW
+===================================================== */
+
+body.dark .page-title,
+body.dark h1 {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* =====================================================
+   ENTERPRISE DARK MODE SYSTEM FINAL
+===================================================== */
+
+body.dark {
+  background: linear-gradient(135deg, #0b1220, #0f172a);
+  color: #e2e8f0;
+}
+
+body.dark .main-content {
+  background: transparent;
+}
+
+/* Cards */
+body.dark .ip-card,
+body.dark .history-container,
+body.dark .result-card,
+body.dark .chart-card,
+body.dark .map-card {
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+}
+
+/* Headings */
+body.dark h1,
+body.dark h2,
+body.dark h3 {
+  color: #ffffff;
+}
+
+/* Inputs */
+body.dark input,
+body.dark textarea {
+  background: #1e293b;
+  color: #ffffff;
+  border: 1px solid #334155;
+}
+
+body.dark input::placeholder,
+body.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Timeline */
+body.dark .timeline-item {
+  background: rgba(30,41,59,0.8);
+  border: 1px solid rgba(59,130,246,0.2);
+}
+
+body.dark .ip-address {
+  color: #ffffff;
+}
+
+body.dark .timestamp {
+  color: #94a3b8;
+}
+
+/* =====================================================
+   DARK MODE PAGE WRAPPER FIX
+===================================================== */
+
+body.dark {
+  background: linear-gradient(135deg, #0b1220, #0f172a);
+}
+
+body.dark .main-content {
+  background: transparent;
+}
+
+/* Remove white page sections */
+body.dark .dashboard,
+body.dark .logs-page,
+body.dark .incidents-page,
+body.dark .log-parser-page,
+body.dark .ip-analyzer-page {
+  background: transparent !important;
+}
+
+/* =====================================================
+   DARK MODE CARD FIX
+===================================================== */
+
+body.dark .card,
+body.dark .table-container,
+body.dark .logs-container,
+body.dark .incidents-container,
+body.dark .parser-container,
+body.dark .history-container {
+  background: #111827 !important;
+  border: 1px solid rgba(59,130,246,0.08);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+/* Dark mode table fix */
+
+body.dark table {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+body.dark th {
+  background: #111827;
+  color: #3b82f6;
+}
+
+body.dark td {
+  border-bottom: 1px solid #1f2937;
+}
+
+/* Remove white outer borders */
+
+body.dark .section,
+body.dark .content-wrapper,
+body.dark .container {
+  background: transparent !important;
+  border: none !important;
+}
+
+body.dark {
+  background-attachment: fixed;
+}
+
+/* =========================================
+   LEVEL 7 – DARK PAGE BACKGROUND FIX
+========================================= */
+
+body.dark .main-content {
+  background: linear-gradient(135deg, #0b1220, #0f172a);
+}
+
+/* Remove white wrapper look */
+body.dark .page-wrapper,
+body.dark .container,
+body.dark .card,
+body.dark .table-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Glass container effect */
+body.dark .glass-card {
+  background: rgba(17, 24, 39, 0.65);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  border-radius: 16px;
+}
+
+/* =========================================
+   LEVEL 7 – PAGE TITLE GLOW
+========================================= */
+
+body.dark .page-title {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(90deg,#3b82f6,#06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* GLOBAL CARD HOVER GLOW */
+body.dark .glass-card:hover,
+body.dark .ip-card:hover,
+body.dark .chart-card:hover,
+body.dark .map-card:hover {
+  box-shadow: 0 0 25px rgba(59,130,246,0.25),
+              0 0 60px rgba(59,130,246,0.15);
+  transform: translateY(-2px);
+  transition: 0.3s ease;
+}
+
+/* Animated Border */
+@keyframes borderPulse {
+  0% { box-shadow: 0 0 0 rgba(59,130,246,0.4); }
+  50% { box-shadow: 0 0 25px rgba(59,130,246,0.6); }
+  100% { box-shadow: 0 0 0 rgba(59,130,246,0.4); }
+}
+
+body.dark .glass-card {
+  animation: borderPulse 6s infinite;
+}
+
+.badge-critical {
+  background: #ef4444;
+  animation: pulseCritical 1.5s infinite;
+}
+
+@keyframes pulseCritical {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.badge-high {
+  background: #f97316;
+  animation: pulseHigh 2s infinite;
+}
+
+@keyframes pulseHigh {
+  0% { box-shadow: 0 0 5px rgba(249,115,22,0.5); }
+  50% { box-shadow: 0 0 20px rgba(249,115,22,0.9); }
+  100% { box-shadow: 0 0 5px rgba(249,115,22,0.5); }
+}
+
+.live-counter {
+  animation: counterGlow 2s infinite alternate;
+}
+
+@keyframes counterGlow {
+  from { text-shadow: 0 0 5px #ef4444; }
+  to   { text-shadow: 0 0 20px #ef4444; }
+}
+
+.alert-ticker {
+  background: #ef4444;
+  color: white;
+  padding: 6px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: tickerMove 12s linear infinite;
+}
+
+@keyframes tickerMove {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(-100%); }
+}
+
+/* REAL-TIME MAP MARKER PULSE */
+@keyframes pulseCritical {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.leaflet-interactive {
+  animation: pulseCritical 2s infinite;
+}
+
+/* 🚀 Pulsing Threat Marker */
+@keyframes pulseMarker {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.pulse-marker {
+  animation: pulseMarker 2s infinite;
+}
+
+/* 🚀 Attack Line Glow */
+.attack-line {
+  animation: lineGlow 3s infinite;
+}
+
+@keyframes lineGlow {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.9; }
+  100% { opacity: 0.3; }
+}
+
+/* ================= RISK FILTER ================= */
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.risk-filter {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #1e293b;
+  color: white;
+  border: 1px solid #334155;
+}
+
+/* Timeline severity glow */
+
+.timeline-high {
+  border-left: 4px solid #ef4444;
+  box-shadow: 0 0 12px rgba(239,68,68,0.4);
+}
+
+.timeline-medium {
+  border-left: 4px solid #f97316;
+  box-shadow: 0 0 12px rgba(249,115,22,0.3);
+}
+
+.timeline-low {
+  border-left: 4px solid #3b82f6;
+}
+
+.severity-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.severity-badge.high {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.severity-badge.medium {
+  background: #78350f;
+  color: #fed7aa;
+}
+
+.severity-badge.low {
+  background: #1e3a8a;
+  color: #bfdbfe;
+}
+
+.topbar.enterprise {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 30px;
+  background: linear-gradient(to right, #0f172a, #020617);
+  border-bottom: 1px solid #1e293b;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.logo {
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.navlinks {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.navlinks a {
+  color: #cbd5e1;
+  font-size: 14px;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.navlinks a:hover {
+  color: #38bdf8;
+}
+
+.active-link {
+  color: #38bdf8 !important;
+  font-weight: 600;
+}
+
+.theme-btn,
+.logout-btn {
+  background: #1e293b;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: white;
+}
+
+/* ================= GLOBAL ================= */
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+}
+
+/* ================= LAYOUT ================= */
+
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+  width: 240px;
+  background: #111827;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  text-decoration: none;
+  color: #cbd5e1;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: 0.2s;
+}
+
+.sidebar-item:hover {
+  background: #1f2937;
+}
+
+.sidebar-item.active {
+  background: #2563eb;
+  color: white;
+}
+
+/* ================= MAIN AREA ================= */
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= TOPBAR ================= */
+
+.topbar {
+  height: 60px;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.topbar-title {
+  font-weight: bold;
+}
+
+.topbar-actions button {
+  margin-left: 10px;
+  padding: 6px 12px;
+  background: #334155;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn {
+  background: #ef4444;
+}
+
+.alert-btn {
+  background: #f59e0b;
+}
+
+/* ================= CONTENT ================= */
+
+.content-area {
+  padding: 20px;
+  overflow-y: auto;
+}
+/* ================= CONTAINER ================= */
+
+.enterprise-container {
+  display: flex;
+  height: 100vh;
+  background: #0f172a;
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+  width: 230px;
+  background: #111827;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-title {
+  font-weight: bold;
+  margin-bottom: 25px;
+  font-size: 18px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  text-decoration: none;
+  color: #cbd5e1;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.sidebar-link:hover {
+  background: #1f2937;
+}
+
+.sidebar-link.active {
+  background: #2563eb;
+  color: white;
+}
+
+/* ================= MAIN ================= */
+
+.enterprise-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= TOPBAR ================= */
+
+.enterprise-topbar {
+  height: 60px;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.topbar-actions button {
+  margin-left: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.theme-btn {
+  background: #334155;
+  color: white;
+}
+
+.logout-btn {
+  background: #ef4444;
+  color: white;
+}
+
+/* ================= CONTENT ================= */
+
+.enterprise-content {
+  padding: 20px;
+  overflow-y: auto;
+}

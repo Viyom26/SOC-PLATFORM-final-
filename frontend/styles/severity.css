@@ -1,0 +1,30 @@
+@keyframes flash {
+  0% { background: transparent; }
+  50% { background: rgba(255,165,0,0.2); }
+}
+.high-row {
+  animation: flash 2s infinite;
+}
+
+.critical {
+  box-shadow: 0 0 20px red;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 10px red; }
+  50% { box-shadow: 0 0 30px red; }
+  100% { box-shadow: 0 0 10px red; }
+}
+
+.row-critical {
+  animation: pulse 2s infinite;
+}
+
+/* Ensure visibility in light mode */
+html.light .high-row {
+  background: rgba(255,165,0,0.08);
+}
+
+html.light .row-critical {
+  box-shadow: 0 0 10px rgba(220,38,38,0.4);
+}

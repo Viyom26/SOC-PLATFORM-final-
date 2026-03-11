@@ -1,0 +1,125 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import ForceGraph2D from "react-force-graph-2d";
+import { apiFetch } from "@/lib/api";
+
+type Flow = {
+  source_ip: string
+  destination_ip: string
+  risk_score?: number
+}
+
+export default function AttackFlowPage() {
+
+  const [data, setData] = useState<any>(null)
+
+  useEffect(() => {
+
+    async function load() {
+
+      try {
+
+        const res = await apiFetch("/api/live-network")
+
+        if (!Array.isArray(res)) return
+
+        const nodes: any = {}
+        const linkMap: any = {}
+
+        res.forEach((item: Flow) => {
+
+          if (!item.source_ip || !item.destination_ip) return
+
+          if (!nodes[item.source_ip]) {
+            nodes[item.source_ip] = {
+              id: item.source_ip,
+              type: "attacker"
+            }
+          }
+
+          if (!nodes[item.destination_ip]) {
+            nodes[item.destination_ip] = {
+              id: item.destination_ip,
+              type: "target"
+            }
+          }
+
+          const key = `${item.source_ip}-${item.destination_ip}`
+
+          if (!linkMap[key]) {
+            linkMap[key] = {
+              source: item.source_ip,
+              target: item.destination_ip,
+              value: 0,
+              risk: item.risk_score || 0
+            }
+          }
+
+          linkMap[key].value += 1
+
+        })
+
+        setData({
+          nodes: Object.values(nodes),
+          links: Object.values(linkMap)
+        })
+
+      } catch (err) {
+
+        console.error("Attack flow error", err)
+
+      }
+
+    }
+
+    load()
+
+  }, [])
+
+  if (!data) return <div className="p-6 text-white">Loading attack graph...</div>
+
+  return (
+
+    <div className="p-6 text-white">
+
+      <h1 className="text-2xl mb-4">
+        Attack Flow Graph
+      </h1>
+
+      <div className="bg-slate-900 border border-slate-700 rounded h-[650px]">
+
+        <ForceGraph2D
+          graphData={data}
+
+          nodeLabel={(node: any) => node.id}
+
+          nodeColor={(node: any) =>
+            node.type === "attacker" ? "#ef4444" : "#3b82f6"
+          }
+
+          linkWidth={(l: any) => Math.max(l.value / 5, 1)}
+
+          linkColor={(link: any) => {
+
+            if (link.risk > 70) return "#ef4444"
+            if (link.risk > 40) return "#f59e0b"
+            return "#22c55e"
+
+          }}
+
+          linkDirectionalParticles={2}
+          linkDirectionalParticleSpeed={0.003}
+          linkDirectionalParticleWidth={2}
+
+          cooldownTicks={200}
+          nodeRelSize={6}
+        />
+
+      </div>
+
+    </div>
+
+  )
+
+}

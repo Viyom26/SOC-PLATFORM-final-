@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "react-countup": "^6.5.3",
+    "react-force-graph": "^1.48.2",
+    "react-simple-maps": "^3.0.0",
+    "recharts": "^3.7.0"
+  }
+}

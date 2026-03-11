@@ -1,0 +1,39 @@
+/* =========================================
+   ENTERPRISE GLASS CARD SYSTEM
+========================================= */
+
+.card-container {
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 25px;
+  transition: 0.3s ease;
+}
+
+/* ================= LIGHT MODE ================= */
+
+body.light .card-container {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+}
+
+/* ================= DARK MODE ================= */
+
+body.dark .card-container {
+  background: rgba(17,24,39,0.65);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+/* ================= TITLE ================= */
+
+.card-title {
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+body.dark .card-title {
+  color: #3b82f6;
+}

@@ -1,0 +1,206 @@
+/* =====================================================
+   LEVEL 6 ENTERPRISE LOGIN UI (FIXED VERSION)
+===================================================== */
+
+/* =============== FULL SCREEN WRAPPER =============== */
+
+.login-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+/* Light Theme */
+body.light .login-container {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+}
+
+/* Dark Theme */
+body.dark .login-container {
+  background: radial-gradient(circle at top left, #0f172a, #1e293b);
+}
+
+/* =============== LOGIN CARD =============== */
+
+.login-card {
+  width: 100%;
+  max-width: 560px;          /* Balanced size */
+  padding: 70px 60px;        /* Spacious */
+  border-radius: 24px;
+  backdrop-filter: blur(25px);
+  text-align: center;
+  transition: 0.3s ease;
+}
+
+/* Light */
+body.light .login-card {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+/* Dark */
+body.dark .login-card {
+  background: rgba(17, 24, 39, 0.9);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+  color: #f1f5f9;
+}
+
+/* =============== TITLE =============== */
+
+.login-card h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.login-subtitle {
+  font-size: 15px;
+  opacity: 0.75;
+  margin-bottom: 40px;
+}
+
+/* =============== INPUT FIELDS =============== */
+
+.login-card input {
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  transition: 0.2s ease;
+}
+
+/* Light */
+body.light .login-card input {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Dark */
+body.dark .login-card input {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+/* Focus */
+.login-card input:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* =============== BUTTON =============== */
+
+.login-card button {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  color: white;
+  transition: 0.3s ease;
+}
+
+.login-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
+}
+
+/* =============== ERROR =============== */
+
+.login-error {
+  background: #ef4444;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: white;
+}
+
+/* =============== FOOTER =============== */
+
+.login-footer {
+  margin-top: 30px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.login-footer a {
+  margin-left: 6px;
+  color: #3b82f6;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+/* =============== RESPONSIVE =============== */
+
+@media (max-width: 600px) {
+  .login-card {
+    padding: 45px 30px;
+  }
+
+  .login-card h2 {
+    font-size: 24px;
+  }
+}
+
+/* =========================================
+   GLOBAL DARK MODE FIX FOR LOGS PAGE
+========================================= */
+
+html.dark .logs-page {
+  background: linear-gradient(135deg,#020617,#0f172a);
+}
+
+/* Cards */
+html.dark .logs-card,
+html.dark .history-container,
+html.dark .modal-content {
+  background: rgba(17,24,39,0.75) !important;
+  border: 1px solid rgba(59,130,246,0.2);
+  color: #e5e7eb;
+}
+
+/* Input area */
+html.dark .log-textarea {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
+/* File input */
+html.dark .file-row input {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* Timeline items */
+html.dark .timeline-item {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+/* Text */
+html.dark .timeline-content strong {
+  color: #f1f5f9;
+}
+
+html.dark .timeline-content small {
+  color: #94a3b8;
+}
+
+/* Empty message */
+html.dark .muted {
+  color: #94a3b8;
+}

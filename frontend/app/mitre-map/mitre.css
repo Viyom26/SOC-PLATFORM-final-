@@ -1,0 +1,42 @@
+.mitre-page {
+  padding: 24px;
+}
+
+.mitre-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.mitre-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+}
+
+.mitre-table th {
+  text-align: left;
+  padding: 12px;
+  background: #1e293b;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.mitre-table td {
+  padding: 12px;
+  border-top: 1px solid #1e293b;
+}
+
+.mitre-tech {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.mitre-tactic {
+  color: #f59e0b;
+}
+
+.loading {
+  color: #94a3b8;
+}

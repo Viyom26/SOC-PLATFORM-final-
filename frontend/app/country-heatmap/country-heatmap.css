@@ -1,0 +1,136 @@
+.heatmap-container {
+  padding: 30px;
+}
+
+/* THEME TEXT */
+html.dark .heatmap-container { color: #f1f5f9; }
+html.light .heatmap-container { color: #0f172a; }
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.legend-bar {
+  width: 150px;
+  height: 10px;
+  border-radius: 5px;
+}
+
+html.dark .legend-bar {
+  background: linear-gradient(to right, #1f2937, #ef4444);
+}
+
+html.light .legend-bar {
+  background: linear-gradient(to right, #cbd5e1, #ef4444);
+}
+
+.country-panel {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+html.dark .country-panel { background: #111827; }
+html.light .country-panel { background: #ffffff; }
+
+.heatmap-tooltip {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+
+html.dark .heatmap-tooltip {
+  background: #0f172a;
+  color: white;
+}
+
+html.light .heatmap-tooltip {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.heatmap-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 350px;
+  padding: 20px;
+  z-index: 100;
+}
+
+html.dark .heatmap-drawer {
+  background: #0f172a;
+  color: white;
+}
+
+html.light .heatmap-drawer {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: -5px 0 20px rgba(0,0,0,0.15);
+}
+
+.drawer-close {
+  margin-bottom: 15px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+html.dark .drawer-close { color: #94a3b8; }
+html.light .drawer-close { color: #475569; }
+
+.heatmap-wrapper {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+html.dark .heatmap-wrapper {
+  background: #020617;
+  color: white;
+}
+
+html.light .heatmap-wrapper {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.heatmap-main { flex: 3; position: relative; }
+
+.heatmap-side {
+  flex: 1;
+  padding: 20px;
+}
+
+html.dark .heatmap-side {
+  background: rgba(15,23,42,0.8);
+  border-left: 1px solid #1e293b;
+}
+
+html.light .heatmap-side {
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+}
+
+.rank-card {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+
+html.dark .rank-card { background: #0f172a; }
+html.light .rank-card { background: #f1f5f9; }
+
+.critical { color: #ef4444; }
+.high { color: #f97316; }
+.medium { color: #eab308; }
+.low { color: #22c55e; }
