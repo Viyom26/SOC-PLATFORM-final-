@@ -1,4 +1,4 @@
-# SOC Platform
+<img width="1910" height="916" alt="dashboard png" src="https://github.com/user-attachments/assets/ef2dfa72-bea1-474b-9919-758ac36e2b77" /><img width="1910" height="916" alt="dashboard png" src="https://github.com/user-attachments/assets/c7c3773d-d6cc-4f8d-a097-198df1bf4124" /><img width="1910" height="916" alt="dashboard png" src="https://github.com/user-attachments/assets/3364a6c7-9434-4797-a4d0-001321ca6e24" /># SOC Platform
 
 A Security Operations Center (SOC) monitoring platform for detecting, analyzing, and visualizing cybersecurity threats in real time.
 
@@ -120,6 +120,24 @@ soc-platform/
 ```
 
 ---
+
+## Dashboard Preview
+
+### Main Dashboard
+![SOC Dashboard]! <img width="1910" height="916" alt="dashboard" src="https://github.com/user-attachments/assets/3a3ab03e-8b7c-4566-8d44-e43c7c3b2706" />
+
+
+
+
+### Threat Intelligence
+![Threat Intelligence] <img width="1909" height="913" alt="threat-intel" src="https://github.com/user-attachments/assets/883b11bf-5125-4370-b189-70d9db520763" />
+
+
+
+### Live Network Monitoring
+![Live Network] <img width="1911" height="919" alt="live-network" src="https://github.com/user-attachments/assets/d5c80712-ada8-4780-b0ed-33eb225bfe8c" />
+
+
 
 ## Future Improvements
 
