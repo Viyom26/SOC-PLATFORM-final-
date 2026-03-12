@@ -22,7 +22,7 @@ This project provides tools for log analysis, threat intelligence enrichment, ne
 
 ### Main Dashboard
 
-<img src="https://github.com/user-attachments/assets/3a3ab03e-8b7c-4566-8d44-e43c7c3b2706" width="900">
+<img width="1909" height="918" alt="dashboard" src="https://github.com/user-attachments/assets/6a9d63fc-1ef7-4173-ab1f-892659cd5e65" />
 
 ### Threat Intelligence
 
