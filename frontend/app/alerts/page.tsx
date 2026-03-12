@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import MitreBadge from "@/components/mitre/MitreBadge";
+import toast from "react-hot-toast";
 
 type Alert = {
   id: string;
@@ -29,29 +30,78 @@ function getSeverityColor(severity: string) {
 }
 
 export default function AlertsPage() {
+
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadAlerts() {
-      try {
-        const data = await apiFetch("/alerts/");
-        setAlerts(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Failed to load alerts", err);
+  /* NEW: Track newest alert for notification */
+  const [lastAlertId, setLastAlertId] = useState<string | null>(null);
+
+  async function loadAlerts() {
+
+    try {
+
+      const data = await apiFetch("/alerts/");
+
+      if (Array.isArray(data)) {
+
+        setAlerts(data);
+
+        /* ================= DETECT NEW ALERT ================= */
+
+        if (data.length > 0) {
+
+          const newest = data[0];
+
+          if (lastAlertId && newest.id !== lastAlertId) {
+
+            toast(
+              `🚨 ${newest.severity} Alert\nSource IP: ${newest.source_ip}`,
+              {
+                duration: 5000,
+              }
+            );
+
+          }
+
+          setLastAlertId(newest.id);
+
+        }
+
+      } else {
         setAlerts([]);
-      } finally {
-        setLoading(false);
       }
+
+    } catch (err) {
+
+      console.error("Failed to load alerts", err);
+      setAlerts([]);
+
+    } finally {
+
+      setLoading(false);
+
     }
 
+  }
+
+  useEffect(() => {
+
     loadAlerts();
+
+    /* SOC REAL-TIME REFRESH */
+    const interval = setInterval(loadAlerts, 5000);
+
+    return () => clearInterval(interval);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div style={{ padding: "24px" }}>
+
       <h1 style={{ fontSize: "28px", fontWeight: 600 }}>
-        SOC Alerts
+        🚨 SOC Alerts
       </h1>
 
       {loading ? (
@@ -59,6 +109,7 @@ export default function AlertsPage() {
       ) : alerts.length === 0 ? (
         <p style={{ marginTop: 20 }}>No alerts detected</p>
       ) : (
+
         <div
           style={{
             marginTop: 20,
@@ -67,6 +118,7 @@ export default function AlertsPage() {
             overflow: "hidden",
           }}
         >
+
           <table
             style={{
               width: "100%",
@@ -74,6 +126,7 @@ export default function AlertsPage() {
               color: "#e5e7eb",
             }}
           >
+
             <thead style={{ background: "#1e293b" }}>
               <tr>
                 <th style={{ padding: 12, textAlign: "left" }}>Source IP</th>
@@ -85,16 +138,20 @@ export default function AlertsPage() {
             </thead>
 
             <tbody>
+
               {alerts.map((alert) => (
+
                 <tr
                   key={alert.id}
                   style={{
                     borderTop: "1px solid #334155",
                   }}
                 >
+
                   <td style={{ padding: 12 }}>{alert.source_ip}</td>
 
                   <td style={{ padding: 12 }}>
+
                     <span
                       style={{
                         background: getSeverityColor(alert.severity),
@@ -106,6 +163,7 @@ export default function AlertsPage() {
                     >
                       {alert.severity}
                     </span>
+
                   </td>
 
                   <td style={{ padding: 12 }}>
@@ -123,12 +181,19 @@ export default function AlertsPage() {
                       timeZone: "Asia/Kolkata",
                     })}
                   </td>
+
                 </tr>
+
               ))}
+
             </tbody>
+
           </table>
+
         </div>
+
       )}
+
     </div>
   );
 }

@@ -21,12 +21,17 @@ export default function ClientLayout({
 
   /* ================= AUTH CHECK ================= */
   useEffect(() => {
+
+    if (typeof window === "undefined") return;
+
     const token = localStorage.getItem("access_token");
     setAuthenticated(!!token);
+
   }, [pathname]);
 
   /* ================= REDIRECT CONTROL ================= */
   useEffect(() => {
+
     if (authenticated === null) return;
 
     if (!authenticated && !isAuthPage) {
@@ -36,22 +41,27 @@ export default function ClientLayout({
     if (authenticated && isAuthPage) {
       router.replace("/dashboard");
     }
+
   }, [authenticated, isAuthPage, router]);
 
   /* ================= LOAD SAVED THEME ================= */
   useEffect(() => {
+
+    if (typeof window === "undefined") return;
+
     const savedTheme =
       (localStorage.getItem("theme") as "dark" | "light") || "dark";
 
     setTheme(savedTheme);
 
-    // Apply theme to <html>
     document.documentElement.classList.remove("dark", "light");
     document.documentElement.classList.add(savedTheme);
+
   }, []);
 
   /* ================= TOGGLE THEME ================= */
   function toggleTheme() {
+
     const newTheme = theme === "dark" ? "light" : "dark";
 
     setTheme(newTheme);
@@ -59,6 +69,7 @@ export default function ClientLayout({
 
     document.documentElement.classList.remove("dark", "light");
     document.documentElement.classList.add(newTheme);
+
   }
 
   /* ================= LOADING STATE ================= */
@@ -73,9 +84,11 @@ export default function ClientLayout({
   return (
     <AlertProvider>
       <div className="enterprise-container">
+
         <Sidebar />
 
         <main className="enterprise-content with-sidebar">
+
           {/* TOP BAR */}
           <div className="topbar-fixed">
             <div className="topbar-inner">
@@ -91,8 +104,12 @@ export default function ClientLayout({
           </div>
 
           {/* PAGE CONTENT */}
-          <div className="page-content">{children}</div>
+          <div className="page-content">
+            {children}
+          </div>
+
         </main>
+
       </div>
     </AlertProvider>
   );

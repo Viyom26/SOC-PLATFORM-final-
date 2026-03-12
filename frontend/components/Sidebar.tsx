@@ -170,7 +170,10 @@ export default function Sidebar() {
           <nav className="sidebar-nav">
 
             {menu
-              .filter((item) => role && item.roles.includes(role))
+              .filter((item) => {
+  if (!role) return false;
+  return item.roles.includes(role);
+})
               .map((item) => {
 
                 const active =

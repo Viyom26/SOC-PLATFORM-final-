@@ -7,6 +7,7 @@ import {
   Geography,
   Marker,
   ZoomableGroup,
+  Line,
 } from "react-simple-maps";
 import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -50,6 +51,24 @@ export default function GeoMapPage() {
   const geoUrl =
     "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
+  /* ================= CREATE LIVE ATTACK FLOWS ================= */
+
+  const attackFlows = useMemo(() => {
+    if (threats.length < 2) return [];
+
+    const flows: any[] = [];
+
+    for (let i = 0; i < threats.length - 1; i++) {
+      flows.push({
+        from: [threats[i].lon, threats[i].lat],
+        to: [threats[i + 1].lon, threats[i + 1].lat],
+        risk: threats[i].risk,
+      });
+    }
+
+    return flows;
+  }, [threats]);
+
   return (
     <div className="min-h-screen bg-[#020617] text-white p-6">
       <h1 className="text-2xl font-bold mb-6">
@@ -81,6 +100,31 @@ export default function GeoMapPage() {
                 ))
               }
             </Geographies>
+
+            {/* ================= LIVE ATTACK FLOW LINES ================= */}
+
+            {attackFlows.map((flow, i) => (
+              <Line
+                key={i}
+                from={flow.from}
+                to={flow.to}
+                stroke={
+                  flow.risk === "CRITICAL"
+                    ? "#ff0000"
+                    : flow.risk === "HIGH"
+                    ? "#f97316"
+                    : "#38bdf8"
+                }
+                strokeWidth={2}
+                strokeLinecap="round"
+                style={{
+                  opacity: 0.7,
+                  animation: "dashAttack 3s linear infinite",
+                }}
+              />
+            ))}
+
+            {/* ================= THREAT MARKERS ================= */}
 
             {threats.map((t) => (
               <Marker
