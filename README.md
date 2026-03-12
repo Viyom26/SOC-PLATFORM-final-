@@ -2,31 +2,58 @@
 
 A Security Operations Center (SOC) monitoring platform for detecting, analyzing, and visualizing cybersecurity threats in real time.
 
-This project provides tools for log analysis, threat intelligence enrichment, network monitoring, and security event visualization through a modern dashboard.
+This project provides tools for **log analysis, threat intelligence enrichment, network monitoring, and security event visualization** through an interactive security dashboard.
+
+The goal of the platform is to simulate capabilities found in real **SIEM (Security Information and Event Management)** systems used by security teams.
 
 ---
 
-## Features
+# Features
 
-- Log Parsing and Security Event Ingestion
-- Threat Intelligence Enrichment
-- Live Network Monitoring
-- MITRE ATT&CK Mapping
-- Risk Scoring Engine
-- Attack Surface Monitoring
-- Security Dashboard Visualization
+### Core Security Monitoring
+
+* Log Parsing and Security Event Ingestion
+* Threat Intelligence Enrichment
+* Live Network Monitoring
+* Attack Surface Monitoring
+* Risk Scoring Engine
+
+### Detection & Analysis
+
+* MITRE ATT&CK Mapping
+* Security Event Correlation
+* Incident Investigation Panel
+* IP Reputation Analysis
+
+### Visualization
+
+* SOC Security Dashboard
+* Live Attack Stream
+* Global Threat Intelligence Map
+* Severity Distribution Charts
+* Alert Trend Analysis
+
+### Real-Time Capabilities
+
+* WebSocket-based Live Alerts
+* Continuous Log Monitoring
+* Live Threat Activity Feed
 
 ---
 
-## Dashboard Preview
+# Dashboard Preview
 
-### Main Dashboard
+### Main SOC Dashboard
 
 <img width="1909" height="918" alt="dashboard" src="https://github.com/user-attachments/assets/6a9d63fc-1ef7-4173-ab1f-892659cd5e65" />
 
-### Threat Intelligence
+---
+
+### Threat Intelligence Module
 
 <img src="https://github.com/user-attachments/assets/883b11bf-5125-4370-b189-70d9db520763" width="900">
+
+---
 
 ### Live Network Monitoring
 
@@ -34,46 +61,96 @@ This project provides tools for log analysis, threat intelligence enrichment, ne
 
 ---
 
-## Architecture
+# Architecture
 
-### Frontend
-- Next.js
-- TypeScript
-- TailwindCSS
+## Frontend
 
-### Backend
-- FastAPI
-- Python
-- SQLAlchemy
-- GeoIP
+* Next.js
+* TypeScript
+* TailwindCSS
+* Recharts (Security analytics visualization)
 
----
+## Backend
 
-## Modules
-
-### Log Parser
-Uploads and parses security logs such as firewall logs, IDS logs, and other security events.
-
-### Threat Intelligence
-Enriches log data with IP reputation, geolocation, and threat intelligence context.
-
-### Live Network Monitoring
-Displays active connections and network activity from the monitored server or infrastructure.
-
-### MITRE ATT&CK Mapping
-Maps detected activity patterns to MITRE ATT&CK techniques to help understand attacker behavior.
-
-### Risk Engine
-Calculates risk scores based on event severity, frequency, and threat intelligence data.
-
-### Dashboard
-Provides visual insights into detected threats and security activity.
+* FastAPI
+* Python
+* SQLAlchemy
+* GeoIP Intelligence
 
 ---
 
-## Installation
+# Modules
 
-### Clone the Repository
+## Log Parser
+
+Uploads and parses security logs such as:
+
+* Firewall logs
+* IDS / IPS logs
+* Network activity logs
+* Security alerts
+
+These logs are normalized into structured events for analysis.
+
+---
+
+## Threat Intelligence
+
+Enriches log data with:
+
+* IP reputation scoring
+* Geolocation intelligence
+* Threat context information
+
+This helps analysts understand whether an IP address is potentially malicious.
+
+---
+
+## Live Network Monitoring
+
+Displays active network connections and traffic behavior from monitored infrastructure.
+
+Security teams can observe:
+
+* Source and destination connections
+* Active communication patterns
+* Suspicious activity
+
+---
+
+## MITRE ATT&CK Mapping
+
+Maps detected behavior patterns to **MITRE ATT&CK techniques**, allowing analysts to understand attacker tactics and techniques.
+
+---
+
+## Risk Engine
+
+Calculates risk scores using factors such as:
+
+* Event severity
+* Event frequency
+* Threat intelligence results
+* Behavioral indicators
+
+---
+
+## Incident Investigation Panel
+
+Allows analysts to click an attacker IP and view:
+
+* Full attack timeline
+* Target systems
+* Severity history
+* MITRE techniques involved
+
+This simulates real **SOC analyst investigation workflows**.
+
+---
+
+# Installation
+
+## Clone the Repository
 
 ```bash
 git clone https://github.com/Viyom26/soc-platform.git
@@ -82,7 +159,7 @@ cd soc-platform
 
 ---
 
-## Backend Setup
+# Backend Setup
 
 ```bash
 cd backend
@@ -90,7 +167,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-The backend API will run on:
+Backend API will run on:
 
 ```
 http://localhost:8000
@@ -98,7 +175,7 @@ http://localhost:8000
 
 ---
 
-## Frontend Setup
+# Frontend Setup
 
 ```bash
 cd frontend
@@ -106,7 +183,7 @@ npm install
 npm run dev
 ```
 
-The frontend dashboard will run on:
+Frontend dashboard will run on:
 
 ```
 http://localhost:3000
@@ -114,44 +191,48 @@ http://localhost:3000
 
 ---
 
-## Project Structure
+# Project Structure
 
 ```
-soc-platform/
+soc-platform
 │
-├── backend/
-│   ├── routes/
-│   ├── models/
-│   ├── services/
-│   ├── database/
+├── backend
+│   ├── routes
+│   ├── models
+│   ├── services
+│   ├── database
 │   └── main.py
 │
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── styles/
-│   └── lib/
+├── frontend
+│   ├── app
+│   ├── components
+│   ├── styles
+│   └── lib
+│
+├── screenshots
 │
 └── README.md
 ```
 
 ---
 
-## Future Improvements
+# Future Improvements
 
-- Automated attack detection
-- Network packet analysis
-- Threat correlation engine
-- Alerting system
-- SOC automation workflows
+Possible future enhancements:
+
+* Machine learning based attack detection
+* Network packet inspection
+* Automated threat correlation
+* SOC automation workflows
+* Integration with external threat intelligence feeds
 
 ---
 
-## Author
+# Author
 
 **Viyom Jagtap**
 
 Cybersecurity & Software Development Enthusiast
 
-GitHub:  
+GitHub:
 https://github.com/Viyom26
