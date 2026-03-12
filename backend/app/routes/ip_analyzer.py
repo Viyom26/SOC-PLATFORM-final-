@@ -66,6 +66,25 @@ def enrich_ip(ip: str):
         return {}
 
 
+# ================= SAFE BROADCAST =================
+
+def safe_broadcast(payload: dict):
+    """
+    Safely execute async websocket broadcast
+    from sync code.
+    """
+    try:
+        asyncio.run(broadcast_alert(payload))
+    except RuntimeError:
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(broadcast_alert(payload))
+            loop.close()
+        except Exception as e:
+            print("WebSocket broadcast failed:", e)
+
+
 # ================= CORE =================
 
 def analyze_ip_list(ips: List[str], db: Session, user: dict):
@@ -193,17 +212,12 @@ def analyze_ip_list(ips: List[str], db: Session, user: dict):
             ))
 
             if risk in ["HIGH", "CRITICAL"]:
-                try:
-                    asyncio.create_task(
-                        broadcast_alert({
-                            "source_ip": ip,
-                            "severity": risk,
-                            "risk_score": score,
-                            "timestamp": now.isoformat()
-                        })
-                    )
-                except Exception as e:
-                    print("WebSocket broadcast failed:", e)
+                safe_broadcast({
+                    "source_ip": ip,
+                    "severity": risk,
+                    "risk_score": score,
+                    "timestamp": now.isoformat()
+                })
 
         # ===== INCIDENT =====
 
