@@ -24,6 +24,7 @@ import {
 
 type LogItem = {
   src_ip: string;
+  dst_ip?: string;
   severity: string;
   created_at?: string;
 };
@@ -101,6 +102,30 @@ export default function DashboardPage() {
 
   const wsRef = useRef<WebSocket | null>(null);
 
+  /* ================= LIVE ATTACK STREAM (REAL DATA) ================= */
+
+  const [liveAttacks, setLiveAttacks] = useState<LogItem[]>([]);
+
+  useEffect(() => {
+    async function loadStream() {
+      try {
+        const logs = await apiFetch("/logs");
+
+        const items = logs?.items || [];
+
+        setLiveAttacks(items.slice(0, 8));
+      } catch (err) {
+        console.error("Attack stream load error", err);
+      }
+    }
+
+    loadStream();
+
+    const interval = setInterval(loadStream, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   /* ================= LOAD DASHBOARD ================= */
 
   const loadDashboard = useCallback(async () => {
@@ -114,20 +139,14 @@ export default function DashboardPage() {
 
       const logs: LogItem[] = logsData?.items || [];
 
-      /* ===== Severity Chart Data ===== */
-
-      setSeverityData(severity || []);
-
-      /* ===== Attackers Sorting ===== */
+      setSeverityData(Array.isArray(severity) ? severity : []);
 
       const sortedAttackers: Attacker[] =
-  (Array.isArray(attackersData) ? attackersData : [])
-        .filter((a: Attacker) => a.ip)
-        .sort((a: Attacker, b: Attacker) => b.attacks - a.attacks);
+        (Array.isArray(attackersData) ? attackersData : [])
+          .filter((a: Attacker) => a.ip)
+          .sort((a: Attacker, b: Attacker) => b.attacks - a.attacks);
 
       setAttackers(sortedAttackers);
-
-      /* ===== Stats ===== */
 
       setStats({
         totalAlerts: logs.length,
@@ -141,8 +160,6 @@ export default function DashboardPage() {
 
         uniqueIps: new Set(logs.map((l: LogItem) => l.src_ip)).size,
       });
-
-      /* ===== Hourly Trend ===== */
 
       const grouped: Record<string, number> = {};
 
@@ -185,16 +202,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [loadDashboard]);
 
-  /* ================= LOADING SAFETY ================= */
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
   /* ================= WEBSOCKET ================= */
 
   useEffect(() => {
@@ -218,13 +225,9 @@ export default function DashboardPage() {
         }
 
         loadDashboard();
-      } catch (err) {
+      } catch {
         console.warn("Invalid WebSocket message", event.data);
       }
-    };
-
-    ws.onerror = () => {
-      console.log("⚠ WebSocket Error");
     };
 
     ws.onclose = () => {
@@ -235,7 +238,6 @@ export default function DashboardPage() {
     return () => {
       ws.close();
       wsRef.current = null;
-      setTimeout(loadDashboard, 3000);
     };
   }, [loadDashboard]);
 
@@ -380,6 +382,22 @@ export default function DashboardPage() {
             🌍 Open Advanced Global Threat Map →
           </div>
         </Link>
+      </div>
+
+      {/* ================= LIVE ATTACK STREAM ================= */}
+
+      <div className="chart-card">
+        <h3>⚡ Live Attack Stream</h3>
+
+        {liveAttacks.map((log, i) => (
+          <div key={i} className="attack-stream-row">
+            🚨 {log.src_ip} → {log.dst_ip || "Internal"}
+            <span className="risk-badge risk-high">{log.severity}</span>
+            <span className="muted">
+              {new Date(log.created_at || "").toLocaleTimeString()}
+            </span>
+          </div>
+        ))}
       </div>
 
       <HistoryPanel enableRiskFilter />
