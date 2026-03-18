@@ -1,25 +1,48 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pathlib import Path
+import os  # ✅ NEW
+import time  # ✅ NEW
+from sqlalchemy.exc import OperationalError  # ✅ NEW
 
 # Database path
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATABASE_URL = f"sqlite:///{BASE_DIR / 'soc.db'}"
 
-# 🔥 Improved SQLite Engine Configuration
+# 🔥 NEW: Support ENV-based DB (Docker → PostgreSQL, Local → SQLite)
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{BASE_DIR / 'soc.db'}"
+)
+
+# 🔥 Detect SQLite or Postgres
+is_sqlite = DATABASE_URL.startswith("sqlite")
+
+# 🔥 Improved Engine Configuration
 engine = create_engine(
     DATABASE_URL,
     connect_args={
         "check_same_thread": False,
-        "timeout": 30  # wait 30 seconds before raising lock error
-    },
-    pool_pre_ping=True,  # auto reconnect stale connections
+        "timeout": 30
+    } if is_sqlite else {},  # ✅ only for SQLite
+    pool_pre_ping=True,
 )
 
-# ✅ Enable WAL mode for better concurrency
-with engine.connect() as conn:
-    conn.execute(text("PRAGMA journal_mode=WAL;"))
-    conn.execute(text("PRAGMA synchronous=NORMAL;"))
+# 🔥 NEW: Retry DB connection (important for Docker/Postgres)
+MAX_RETRIES = 10
+for i in range(MAX_RETRIES):
+    try:
+        with engine.connect() as conn:
+            print("✅ Database connected")
+        break
+    except OperationalError:
+        print(f"⏳ Waiting for DB... ({i+1}/{MAX_RETRIES})")
+        time.sleep(3)
+
+# ✅ Enable WAL mode ONLY for SQLite
+if is_sqlite:
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA journal_mode=WAL;"))
+        conn.execute(text("PRAGMA synchronous=NORMAL;"))
 
 SessionLocal = sessionmaker(
     autocommit=False,

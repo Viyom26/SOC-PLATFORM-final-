@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import SeverityPie from "@/components/charts/SeverityPie";
 import { useAlerts } from "@/context/AlertContext";
 import { apiFetch } from "@/lib/api";
+import useSocket from "@/hooks/useSocket";
 import toast, { Toaster } from "react-hot-toast";
 
 type Summary = {
@@ -30,6 +31,13 @@ type KPIProps = {
   color: string;
 };
 
+type SocketMessage = {
+  type?: string;
+  message?: string;
+  severity?: string;
+  risk_score?: number; // ✅ added
+};
+
 export default function CommandCenter() {
   const [summary, setSummary] = useState<Summary>({
     critical: 0,
@@ -47,6 +55,24 @@ export default function CommandCenter() {
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   const { alerts } = useAlerts();
+
+  useSocket((msg: SocketMessage) => {
+    if (msg.type === "NEW_ALERT" || msg.severity) {
+      toast.success("New Alert 🚨");
+
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+      }
+
+      loadSummary();
+      loadThreatLevel();
+      loadIncidents();
+
+      if (feedRef.current) {
+        feedRef.current.scrollTop = 0;
+      }
+    }
+  });
 
   /* ================= HELPER ================= */
 
@@ -254,7 +280,26 @@ export default function CommandCenter() {
 
           {alerts.map((alert, index) => (
             <div key={index} className="p-3 bg-slate-800 rounded">
-              {alert.message} - {alert.severity}
+              {alert.message}
+
+              <div className="text-xs text-gray-400">
+                {alert.severity}
+              </div>
+
+              {/* 🔥 AI RISK COLOR SYSTEM */}
+              {alert.risk_score !== undefined && (
+                <div
+                  className={`text-xs font-bold ${
+                    alert.risk_score > 80
+                      ? "text-red-500"
+                      : alert.risk_score > 50
+                      ? "text-yellow-400"
+                      : "text-green-400"
+                  }`}
+                >
+                  AI Risk: {alert.risk_score}
+                </div>
+              )}
             </div>
           ))}
         </div>

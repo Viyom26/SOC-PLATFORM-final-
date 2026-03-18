@@ -4,7 +4,7 @@ import os
 import csv
 import json
 import asyncio
-
+from fastapi.concurrency import run_in_threadpool
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -19,7 +19,7 @@ from app.models.user_activity import UserActivity
 from app.models.incident import Incident
 from app.models.asset import Asset
 from app.security import require_role
-from app.api.websocket import manager
+from app.websocket.manager import manager
 
 from app.services.alert_service import create_alert
 from app.services.detection_engine import detect_port_scan
@@ -237,16 +237,18 @@ def process_logs(file_path, filename, username):
                     except Exception as e:
                         print("Correlation failed:", e)
 
-                    # 🔥 ALERT CREATION (FIXED INDENT)
+                    # 🔥 ALERT CREATION (FIXED CORRECT)
                     try:
-                        asyncio.run(create_alert({
-                            "source_ip": source_ip,
-                            "severity": severity,
-                            "message": row_text,
-                            "count": 1,
-                            "country_risk": 2
-                        }, db))
+                        create_alert(
+                            db=db,
+                            source_ip=source_ip,
+                            severity=severity,
+                            message=row_text,
+                            risk_score=risk_score,
+                            classification=row_text
+                        )
 
+                        # ✅ ALWAYS append after success
                         alerts_to_stream.append({
                             "source_ip": source_ip,
                             "destination_ip": destination_ip,
@@ -254,7 +256,7 @@ def process_logs(file_path, filename, username):
                             "risk_score": risk_score,
                             "message": row_text
                         })
-
+                    
                     except Exception as e:
                         print("Alert creation failed:", e)
 
@@ -307,11 +309,26 @@ def process_logs(file_path, filename, username):
 
         db.commit()
 
-        async def broadcast_alerts():
+                # ✅ FIXED (SAFE ASYNC EXECUTION)
+        async def safe_broadcast():
             for alert in alerts_to_stream[:100]:
-                await manager.broadcast(alert)
+                try:
+                    await manager.broadcast({
+                        "type": "NEW_ALERT",  # ✅ IMPORTANT (frontend expects this)
+                        "severity": alert["severity"],
+                        "source_ip": alert["source_ip"],
+                        "message": alert["message"],
+                        "risk_score": alert["risk_score"]
+                    })
+                except Exception as e:
+                    print("Broadcast failed:", e)
 
-        asyncio.run(broadcast_alerts())
+        try:
+            loop = asyncio.get_running_loop()
+            asyncio.create_task(safe_broadcast())  # ✅ BEST FIX
+        except RuntimeError:
+            asyncio.run(safe_broadcast())
+        
 
     finally:
         db.close()

@@ -19,7 +19,11 @@ class Incident(Base):
 
     owner = Column(String, nullable=True)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # ✅ ensure consistent UTC timestamps
+    created_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc)
+    )
 
     # ⭐ added for SOC updates / tracking
     updated_at = Column(
@@ -27,3 +31,6 @@ class Incident(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+    
+    # ✅ REQUIRED (you already added correctly)
+    closed_at = Column(DateTime, nullable=True)

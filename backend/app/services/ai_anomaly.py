@@ -14,6 +14,10 @@ def calculate_anomaly_score(
     anomaly_score = 0
     now = datetime.now(timezone.utc)
 
+    # ✅ safety defaults
+    score = score or 0
+    reputation = reputation or 0
+
     # 1️⃣ Score spike detection
     last_record = (
         db.query(IPAnalysis)
@@ -29,32 +33,52 @@ def calculate_anomaly_score(
         if abs(reputation - (last_record.vt_reputation or 0)) > 30:
             anomaly_score += 20
 
+    # 🔥 NEW: repeated suspicious IP behavior
+    recent_window = now - timedelta(minutes=30)
+    ip_count = (
+        db.query(IPAnalysis)
+        .filter(
+            IPAnalysis.ip == ip,
+            IPAnalysis.analyzed_at >= recent_window
+        )
+        .count()
+    )
+
+    if ip_count > 10:
+        anomaly_score += 20
+
     # 2️⃣ ASN burst detection
     one_hour_ago = now - timedelta(hours=1)
 
-    asn_count = (
-        db.query(IPAnalysis)
-        .filter(
-            IPAnalysis.asn == asn,
-            IPAnalysis.analyzed_at >= one_hour_ago
+    if asn:  # ✅ prevent None crash
+        asn_count = (
+            db.query(IPAnalysis)
+            .filter(
+                IPAnalysis.asn == asn,
+                IPAnalysis.analyzed_at >= one_hour_ago
+            )
+            .count()
         )
-        .count()
-    )
 
-    if asn_count > 5:
-        anomaly_score += 25
+        if asn_count > 5:
+            anomaly_score += 25
 
     # 3️⃣ Country surge detection
-    country_count = (
-        db.query(IPAnalysis)
-        .filter(
-            IPAnalysis.country == country,
-            IPAnalysis.analyzed_at >= one_hour_ago
+    if country:  # ✅ prevent None crash
+        country_count = (
+            db.query(IPAnalysis)
+            .filter(
+                IPAnalysis.country == country,
+                IPAnalysis.analyzed_at >= one_hour_ago
+            )
+            .count()
         )
-        .count()
-    )
 
-    if country_count > 10:
-        anomaly_score += 25
+        if country_count > 10:
+            anomaly_score += 25
+
+    # 🔥 NEW: high base score boost
+    if score > 80 or reputation < -50:
+        anomaly_score += 15
 
     return min(anomaly_score, 100)

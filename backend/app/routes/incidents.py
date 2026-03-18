@@ -6,6 +6,7 @@ from app.models.incident import Incident
 from app.security import require_role
 from datetime import datetime
 from app.services.audit_service import log_action
+from datetime import datetime, timezone  # ✅ FIX
 
 router = APIRouter(
     prefix="/api/incidents",
@@ -28,7 +29,7 @@ def assign_incident(
         return {"error": "Incident not found"}
 
     incident.owner = payload.get("owner")
-    incident.updated_at = datetime.utcnow()  # ✅ NEW
+    incident.updated_at = datetime.now(timezone.utc)  # ✅ NEW
     db.commit()
 
     log_action(
@@ -63,11 +64,11 @@ def update_status(
         return {"error": "Status required"}
 
     incident.status = new_status
-    incident.updated_at = datetime.utcnow()  # ✅ NEW
+    incident.updated_at = datetime.now(timezone.utc)  # ✅ NEW
 
     # ✅ AUTO CLOSE TIME
     if new_status == "CLOSED":
-        incident.closed_at = datetime.utcnow()
+        incident.closed_at = datetime.now(timezone.utc)
 
     db.commit()
 

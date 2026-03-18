@@ -1,6 +1,9 @@
+from unittest import result
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
+from app.websocket.manager import manager
+import asyncio
 from app.database import get_db
 from app.models.alert import Alert
 
@@ -28,5 +31,17 @@ def get_alerts(db: Session = Depends(get_db)):
             "mitre_technique": getattr(alert, "mitre_technique", None),
             "created_at": alert.created_at.isoformat() if alert.created_at else None  # 🔥 fix
         })
+        
+    # 🔥 OPTIONAL: broadcast latest alerts snapshot
+    try:
+        async def push_snapshot():
+            await manager.broadcast({
+                "type": "ALERT_SNAPSHOT",
+                "data": result[:10]
+            })
+
+        asyncio.run(push_snapshot())
+    except:
+        pass
 
     return result

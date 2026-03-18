@@ -12,7 +12,7 @@ def correlate_alert(db: Session, alert):
     ).first()
 
     if existing:
-        existing.alert_count = (existing.alert_count or 0) + 1
+        # ✅ FIX: removed alert_count usage (not in model)
         existing.updated_at = datetime.utcnow()
         db.commit()
         return existing
@@ -22,7 +22,6 @@ def correlate_alert(db: Session, alert):
         source_ip=alert["ip"],
         severity=alert["severity"],
         status="OPEN",
-        alert_count=1,
         created_at=datetime.utcnow()
     )
 

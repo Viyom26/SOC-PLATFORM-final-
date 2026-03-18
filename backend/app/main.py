@@ -29,6 +29,7 @@ from app.routes import threat_intel
 from app.routes import live_network
 from app.routes.actions import router as actions_router
 from app.routes import hunting
+from app.routes import ws
 from app.security import (
     get_password_hash,
     verify_password,
@@ -49,12 +50,23 @@ from app.api.ai_prediction import router as ai_prediction_router
 from app.services.audit_service import log_action
 from app.routes import actions
 from app.routes import assets
+
 # ================= INIT =================
 
-Base.metadata.create_all(bind=engine)
+from sqlalchemy.exc import OperationalError, SQLAlchemyError  # ✅ UPDATED
+
+try:
+    Base.metadata.create_all(bind=engine)
+except (OperationalError, SQLAlchemyError) as e:  # ✅ UPDATED
+    print("⚠️ DB init skipped (already exists or race condition):", e)
 
 app = FastAPI(title="SOC Backend", version="2.2")
 
+# ================= STARTUP EVENT (IMPROVED) =================
+
+@app.on_event("startup")
+def startup_event():
+    create_default_admin()
 
 # ================= DEFAULT ADMIN =================
 
@@ -77,9 +89,6 @@ def create_default_admin():
     finally:
         db.close()
 
-create_default_admin()
-
-
 # ================= CORS =================
 
 app.add_middleware(
@@ -93,7 +102,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # ================= ROUTERS =================
 
 app.include_router(ip_analyzer.router)
@@ -104,41 +112,45 @@ app.include_router(history.router)
 app.include_router(geo_map.router)
 app.include_router(audit.router)
 
+# ✅ WebSocket (your main one)
+app.include_router(ws.router)
+
+# ⚠️ Keep only if needed (avoid duplication conflicts)
 app.include_router(geo_ws_router)
 
 app.include_router(incidents_router)
 
 app.include_router(threat_intel_router)
 
-app.include_router(websocket_router)
+# ⚠️ If this also uses "/ws", it can conflict — keep if different path
+
 
 app.include_router(ip_combined_router)
-
 app.include_router(country_summary_router)
-
 app.include_router(ai_prediction_router)
 
 app.include_router(alerts.router)
 
 app.include_router(ip_intelligence.router)
-
 app.include_router(detection_rules.router)
-
 app.include_router(rules.router)
 
 app.include_router(attack_timeline.router)
-
 app.include_router(comments.router)
-
 app.include_router(log_sources.router)
+
 app.include_router(search.router)
 app.include_router(compliance.router)
 app.include_router(assets.router)
+
 app.include_router(attack_stream.router)
+
 app.include_router(threat_intel.router, prefix="/api")
 app.include_router(live_network.router, prefix="/api")
+
 app.include_router(hunting.router)
 app.include_router(actions.router)
+
 # ================= AUTH =================
 
 class RegisterSchema(BaseModel):
@@ -181,12 +193,12 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     log_action(
-    db,
-    "LOGIN",
-    user.email,
-    details="User logged in",
-    page="auth"
-)
+        db,
+        "LOGIN",
+        user.email,
+        details="User logged in",
+        page="auth"
+    )
 
     token = create_access_token({
         "sub": user.email,
@@ -202,7 +214,6 @@ def login(
 @app.get("/auth/me")
 def me(user=Depends(get_current_user)):
     return user
-
 
 # ================= LOGS =================
 
@@ -239,7 +250,6 @@ def get_logs(
         "total": len(logs),
     }
 
-
 # ================= INCIDENTS =================
 
 @app.get("/incidents")
@@ -260,7 +270,6 @@ def get_incidents(
         for i in incidents
     ]
 
-
 # ================= SEVERITY CHART =================
 
 @app.get("/api/soc/severity")
@@ -275,7 +284,6 @@ def severity_chart(
     )
 
     return [{"severity": s, "count": c} for s, c in data]
-
 
 # ================= DASHBOARD SUMMARY =================
 
@@ -310,7 +318,6 @@ def get_summary(
         ).scalar() or 0,
     }
 
-
 # ================= GLOBAL THREAT LEVEL =================
 
 @app.get("/api/soc/threat-level")
@@ -318,7 +325,6 @@ def get_threat_level(
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
     db: Session = Depends(get_db),
 ):
-
     logs = db.query(ThreatLog).all()
 
     if not logs:
@@ -338,7 +344,6 @@ def get_threat_level(
         level = "GUARDED"
 
     return {"level": level}
-
 
 # ================= HEALTH =================
 

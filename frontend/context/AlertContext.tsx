@@ -7,6 +7,7 @@ type AlertItem = {
   severity: string;
   message: string;
   timestamp: string;
+  risk_score?: number; // ✅ NEW
 };
 
 type AlertContextType = {
@@ -22,48 +23,66 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
-const reconnectRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectRef = useRef<NodeJS.Timeout | null>(null);
+  const pingRef = useRef<NodeJS.Timeout | null>(null); // ✅ NEW
 
-useEffect(() => {
-  function connect() {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+  useEffect(() => {
+    function connect() {
+      if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    wsRef.current = new WebSocket("ws://127.0.0.1:8000/ws/alerts");
+      wsRef.current = new WebSocket("ws://localhost:8000/ws/alerts");
 
-    wsRef.current.onopen = () => {
-      console.log("✅ WS CONNECTED");
-    };
+      wsRef.current.onopen = () => {
+        console.log("✅ WS CONNECTED");
 
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+        // 🔥 KEEP ALIVE PING (safe)
+        if (pingRef.current) clearInterval(pingRef.current);
 
-      const newAlert = {
-        id: crypto.randomUUID(),
-        severity: data.severity || "LOW",
-        message: data.source_ip || "Unknown IP",
-        timestamp: new Date().toISOString(),
+        pingRef.current = setInterval(() => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send("ping");
+          }
+        }, 30000);
       };
 
-      setAlerts((prev) => [newAlert, ...prev]);
-      setUnread((prev) => prev + 1);
+      wsRef.current.onmessage = (event) => {
+        const parsed = JSON.parse(event.data);
+
+        console.log("📡 WS MSG:", parsed);
+
+        // ✅ FIXED: backend sends flat object
+        if (parsed.type === "NEW_ALERT" || parsed.severity) {
+          const newAlert: AlertItem = {
+            id: crypto.randomUUID(),
+            severity: parsed.severity || "LOW",
+            message: parsed.message || parsed.source_ip || "Unknown",
+            timestamp: new Date().toISOString(),
+            risk_score: parsed.risk_score, // ✅ NEW
+          };
+
+          setAlerts((prev) => [newAlert, ...prev]);
+          setUnread((prev) => prev + 1);
+        }
+      };
+
+      wsRef.current.onerror = (err) => {
+        console.warn("⚠️ WS error:", err);
+      };
+
+      wsRef.current.onclose = () => {
+        console.log("❌ WS CLOSED → reconnecting...");
+        reconnectRef.current = setTimeout(connect, 3000);
+      };
+    }
+
+    connect();
+
+    return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      if (pingRef.current) clearInterval(pingRef.current); // ✅ CLEANUP
+      if (wsRef.current) wsRef.current.close();
     };
-
-    wsRef.current.onerror = () => {
-      console.warn("⚠️ WS error ignored");
-    };
-
-    wsRef.current.onclose = () => {
-      reconnectRef.current = setTimeout(connect, 5000);
-    };
-  }
-
-  connect();
-
-  return () => {
-    if (reconnectRef.current) clearTimeout(reconnectRef.current);
-    if (wsRef.current) wsRef.current.close();
-  };
-}, []);
+  }, []);
 
   function markAllRead() {
     setUnread(0);
