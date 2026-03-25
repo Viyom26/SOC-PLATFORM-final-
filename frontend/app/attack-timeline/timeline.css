@@ -57,18 +57,19 @@
 
 /* severity colors */
 
-.severity.critical {
-  background: #ef4444;
-}
-
-.severity.high {
-  background: #f97316;
+.severity.low {
+  background: #22c55e;
 }
 
 .severity.medium {
   background: #eab308;
 }
 
-.severity.low {
-  background: #22c55e;
+.severity.high {
+  background: #f97316;
 }
+
+.severity.critical {
+  background: #dc2626;
+}
+

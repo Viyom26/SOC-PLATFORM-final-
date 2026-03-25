@@ -1,13 +1,28 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
+
+declare global {
+  interface WindowEventMap {
+    'alerts-update': CustomEvent<BackendAlert[]>;
+  }
+}
 
 type AlertItem = {
   id: string;
   severity: string;
   message: string;
   timestamp: string;
-  risk_score?: number; // ✅ NEW
+  risk_score?: number;
+};
+
+type BackendAlert = {
+  id?: string;
+  source_ip?: string;
+  severity?: string;
+  message?: string;
+  created_at?: string;
+  risk_score?: number;
 };
 
 type AlertContextType = {
@@ -23,41 +38,78 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectRef = useRef<NodeJS.Timeout | null>(null);
-  const pingRef = useRef<NodeJS.Timeout | null>(null); // ✅ NEW
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     function connect() {
-      if (wsRef.current?.readyState === WebSocket.OPEN) return;
+      // ✅ prevent duplicate connections
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
 
-      wsRef.current = new WebSocket("ws://localhost:8000/ws/alerts");
+      const ws = new WebSocket('ws://localhost:8000/ws/alerts');
+      wsRef.current = ws;
 
-      wsRef.current.onopen = () => {
-        console.log("✅ WS CONNECTED");
+      ws.onopen = () => {
+        console.log('✅ WS CONNECTED');
 
-        // 🔥 KEEP ALIVE PING (safe)
+        // 🔥 KEEP ALIVE PING
         if (pingRef.current) clearInterval(pingRef.current);
 
         pingRef.current = setInterval(() => {
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send("ping");
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send('ping');
           }
         }, 30000);
       };
 
-      wsRef.current.onmessage = (event) => {
-        const parsed = JSON.parse(event.data);
+      ws.onmessage = (event) => {
+        let parsed: unknown;
 
-        console.log("📡 WS MSG:", parsed);
+        try {
+          parsed = JSON.parse(event.data);
+        } catch {
+          return;
+        }
 
-        // ✅ FIXED: backend sends flat object
-        if (parsed.type === "NEW_ALERT" || parsed.severity) {
+        // ✅ type guard
+        if (typeof parsed !== 'object' || parsed === null) return;
+
+        const data = parsed as {
+          type?: string;
+          data?: BackendAlert[];
+          severity?: string;
+          message?: string;
+          source_ip?: string;
+          risk_score?: number;
+        };
+
+        console.log('📡 WS MSG:', parsed);
+
+        // ✅ SNAPSHOT
+        if (data.type === 'ALERT_SNAPSHOT' && Array.isArray(data.data)) {
+          const snapshotAlerts: AlertItem[] = data.data.map(
+            (a: BackendAlert) => ({
+              id: a.id || crypto.randomUUID(),
+              severity: a.severity || 'LOW',
+              message: a.message || a.source_ip || 'Unknown',
+              timestamp: a.created_at || new Date().toISOString(),
+              risk_score: a.risk_score,
+            })
+          );
+
+          setAlerts(snapshotAlerts);
+          setUnread(snapshotAlerts.length);
+          return;
+        }
+
+        // ✅ REAL-TIME ALERT
+        if (data.type === 'NEW_ALERT' || data.severity) {
           const newAlert: AlertItem = {
             id: crypto.randomUUID(),
-            severity: parsed.severity || "LOW",
-            message: parsed.message || parsed.source_ip || "Unknown",
+            severity: data.severity || 'LOW',
+            message: data.message || data.source_ip || 'Unknown',
             timestamp: new Date().toISOString(),
-            risk_score: parsed.risk_score, // ✅ NEW
+            risk_score: data.risk_score,
           };
 
           setAlerts((prev) => [newAlert, ...prev]);
@@ -65,22 +117,55 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      wsRef.current.onerror = (err) => {
-        console.warn("⚠️ WS error:", err);
+      ws.onerror = (err) => {
+        console.warn('⚠️ WS error:', err);
       };
 
-      wsRef.current.onclose = () => {
-        console.log("❌ WS CLOSED → reconnecting...");
-        reconnectRef.current = setTimeout(connect, 3000);
+      ws.onclose = () => {
+        console.log('❌ WS CLOSED → reconnecting...');
+        wsRef.current = null;
+
+        reconnectRef.current = setTimeout(() => {
+          connect();
+        }, 3000);
       };
     }
 
     connect();
 
+    // ✅ LISTEN FOR UI SNAPSHOT EVENT
+    const handleSnapshot = (event: CustomEvent<BackendAlert[]>) => {
+      if (!event.detail) return;
+
+      const snapshotAlerts: AlertItem[] = event.detail.map(
+        (a: BackendAlert) => ({
+          id: a.id || crypto.randomUUID(),
+          severity: a.severity || 'LOW',
+          message: a.message || a.source_ip || 'Unknown',
+          timestamp: a.created_at || new Date().toISOString(),
+          risk_score: a.risk_score,
+        })
+      );
+
+      setAlerts(snapshotAlerts);
+      setUnread(snapshotAlerts.length);
+    };
+
+    window.addEventListener('alerts-update', handleSnapshot as EventListener);
+
     return () => {
       if (reconnectRef.current) clearTimeout(reconnectRef.current);
-      if (pingRef.current) clearInterval(pingRef.current); // ✅ CLEANUP
-      if (wsRef.current) wsRef.current.close();
+      if (pingRef.current) clearInterval(pingRef.current);
+
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+
+      window.removeEventListener(
+        'alerts-update',
+        handleSnapshot as EventListener
+      );
     };
   }, []);
 
@@ -97,6 +182,6 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
 
 export function useAlerts() {
   const context = useContext(AlertContext);
-  if (!context) throw new Error("AlertProvider missing");
+  if (!context) throw new Error('AlertProvider missing');
   return context;
 }

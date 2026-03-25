@@ -4,9 +4,12 @@ from app.database import get_db
 from app.models.threat_log import ThreatLog
 from app.models.incident import Incident
 from app.security import require_role
-from datetime import datetime
+from datetime import datetime, timezone
 from app.services.audit_service import log_action
-from datetime import datetime, timezone  # ✅ FIX
+from typing import Optional
+
+from app.models.incident import Incident 
+
 
 router = APIRouter(
     prefix="/api/incidents",
@@ -21,15 +24,16 @@ def assign_incident(
     user=Depends(require_role("ADMIN","ANALYST")),
     db: Session = Depends(get_db)
 ):
-    incident = db.query(Incident).filter(
+    incident: Incident | None = db.query(Incident).filter(
         Incident.id == incident_id
     ).first()
 
-    if not incident:
+    if incident is None:
         return {"error": "Incident not found"}
 
-    incident.owner = payload.get("owner")
-    incident.updated_at = datetime.now(timezone.utc)  # ✅ NEW
+    # ✅ SAFE UPDATE
+    incident.owner = payload.get("owner", None) # type: ignore
+    incident.updated_at = datetime.now(timezone.utc) # type: ignore
     db.commit()
 
     log_action(
@@ -51,11 +55,11 @@ def update_status(
     db: Session = Depends(get_db)
 ):
 
-    incident = db.query(Incident).filter(
+    incident: Optional[Incident] = db.query(Incident).filter(
         Incident.id == incident_id
     ).first()
 
-    if not incident:
+    if incident is None:
         return {"error": "Incident not found"}
 
     new_status = payload.get("status")
@@ -64,11 +68,11 @@ def update_status(
         return {"error": "Status required"}
 
     incident.status = new_status
-    incident.updated_at = datetime.now(timezone.utc)  # ✅ NEW
+    incident.updated_at = datetime.now(timezone.utc) # type: ignore
 
-    # ✅ AUTO CLOSE TIME
+# ✅ SAFE CLOSE
     if new_status == "CLOSED":
-        incident.closed_at = datetime.now(timezone.utc)
+        incident.closed_at = datetime.now(timezone.utc)  # type: ignore
 
     db.commit()
 
@@ -99,7 +103,7 @@ def get_incident_timeline(
         db.query(ThreatLog)
         .filter(ThreatLog.source_ip == ip)
         .order_by(ThreatLog.created_at.asc())
-        .limit(200)
+        .limit(2000)
         .all()
     )
 

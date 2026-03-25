@@ -52,19 +52,7 @@ from app.routes import actions
 from app.routes import assets
 from app.models.user import User
 from app.services.rule_loader import load_default_rules
-app = FastAPI(title="SOC Backend", version="2.2")
-@app.on_event("startup")
-def startup_event():
-    try:
-        create_default_admin()
 
-        # ✅ ADD THIS (IMPORTANT)
-        db = SessionLocal()
-        load_default_rules(db)
-        db.close()
-
-    except Exception as e:
-        print("⚠️ Startup skipped:", e)
 # ================= INIT =================
 
 from sqlalchemy.exc import OperationalError, SQLAlchemyError, IntegrityError  # ✅ UPDATED
@@ -79,11 +67,31 @@ app = FastAPI(title="SOC Backend", version="2.2")
 # ================= STARTUP EVENT (IMPROVED) =================
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
+    print("🔥 STARTUP TRIGGERED")
+
     try:
+        # ✅ Create default admin
         create_default_admin()
+
+        # ✅ Load detection rules
+        db = SessionLocal()
+
+        print("📊 Checking detection rules...")
+        count = db.query(DetectionRule).count()
+        print("RULE COUNT BEFORE:", count)
+
+        load_default_rules(db)
+
+        count_after = db.query(DetectionRule).count()
+        print("RULE COUNT AFTER:", count_after)
+
+        db.close()
+
+        print("✅ Startup completed")
+
     except Exception as e:
-        print("⚠️ Startup skipped:", e)
+        print("⚠️ Startup failed:", e)
 
 # ================= DEFAULT ADMIN =================
 

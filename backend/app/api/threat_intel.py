@@ -44,17 +44,65 @@ def threat_intel(
 
 @router.get("/attackers")
 def get_attackers(
+    source_ip: Optional[str] = Query(None),  # ✅ ADDED
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
     db: Session = Depends(get_db)
 ):
 
-    data = (
-        db.query(
-            ThreatLog.source_ip,
-            func.count(ThreatLog.id).label("count"),
-            func.avg(ThreatLog.risk_score).label("avg_risk")
+    query = db.query(
+        ThreatLog.source_ip,
+        func.count(ThreatLog.id).label("count"),
+        func.avg(ThreatLog.risk_score).label("avg_risk")
+    )
+
+    # ✅ FILTER SUPPORT (FIX)
+    if source_ip:
+        query = query.filter(
+            ThreatLog.source_ip.ilike(f"%{source_ip.strip()}%")
         )
+
+    data = (
+        query
         .group_by(ThreatLog.source_ip)
+        .order_by(desc("count"))
+        .limit(100)
+        .all()
+    )
+
+    return [
+        {
+            "ip": ip,
+            "attacks": count,
+            "avg_risk": int(avg_risk or 0)
+        }
+        for ip, count, avg_risk in data
+    ]
+
+
+# ================= ALL DESTINATIONS =================
+
+@router.get("/destinations")
+def get_destinations(
+    source_ip: Optional[str] = Query(None),  # ✅ ADDED
+    user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
+    db: Session = Depends(get_db)
+):
+
+    query = db.query(
+        ThreatLog.destination_ip,
+        func.count(ThreatLog.id).label("count"),
+        func.avg(ThreatLog.risk_score).label("avg_risk")
+    )
+
+    # ✅ FILTER BY SOURCE IP (IMPORTANT)
+    if source_ip:
+        query = query.filter(
+            ThreatLog.source_ip.ilike(f"%{source_ip.strip()}%")
+        )
+
+    data = (
+        query
+        .group_by(ThreatLog.destination_ip)
         .order_by(desc("count"))
         .limit(100)
         .all()

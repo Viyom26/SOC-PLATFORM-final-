@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import SeverityPie from "@/components/charts/SeverityPie";
-import { useAlerts } from "@/context/AlertContext";
-import { apiFetch } from "@/lib/api";
-import useSocket from "@/hooks/useSocket";
-import toast, { Toaster } from "react-hot-toast";
+import { useEffect, useState, useCallback, useRef } from 'react';
+import SeverityPie from '@/components/charts/SeverityPie';
+import { useAlerts } from '@/context/AlertContext';
+import { apiFetch } from '@/lib/api';
+
+import toast, { Toaster } from 'react-hot-toast';
 
 type Summary = {
   critical: number;
@@ -31,13 +31,6 @@ type KPIProps = {
   color: string;
 };
 
-type SocketMessage = {
-  type?: string;
-  message?: string;
-  severity?: string;
-  risk_score?: number; // ✅ added
-};
-
 export default function CommandCenter() {
   const [summary, setSummary] = useState<Summary>({
     critical: 0,
@@ -49,30 +42,12 @@ export default function CommandCenter() {
   const [threatLevel, setThreatLevel] = useState<ThreatLevel | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
+  const [lastUpdate, setLastUpdate] = useState<string>('');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   const { alerts } = useAlerts();
-
-  useSocket((msg: SocketMessage) => {
-    if (msg.type === "NEW_ALERT" || msg.severity) {
-      toast.success("New Alert 🚨");
-
-      if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
-      }
-
-      loadSummary();
-      loadThreatLevel();
-      loadIncidents();
-
-      if (feedRef.current) {
-        feedRef.current.scrollTop = 0;
-      }
-    }
-  });
 
   /* ================= HELPER ================= */
 
@@ -86,7 +61,7 @@ export default function CommandCenter() {
 
   const loadSummary = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/soc/summary");
+      const data = await apiFetch('/api/soc/summary');
 
       setSummary({
         critical: data?.critical_alerts ?? 0,
@@ -96,8 +71,8 @@ export default function CommandCenter() {
       });
 
       setLastUpdate(
-        new Date().toLocaleTimeString("en-IN", {
-          timeZone: "Asia/Kolkata",
+        new Date().toLocaleTimeString('en-IN', {
+          timeZone: 'Asia/Kolkata',
         })
       );
     } catch {}
@@ -107,7 +82,7 @@ export default function CommandCenter() {
 
   const loadThreatLevel = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/soc/threat-level");
+      const data = await apiFetch('/api/soc/threat-level');
       setThreatLevel(data);
     } catch {}
   }, []);
@@ -116,11 +91,11 @@ export default function CommandCenter() {
 
   const loadIncidents = useCallback(async () => {
     try {
-      const data = await apiFetch("/incidents");
+      const data = await apiFetch('/incidents');
 
       if (Array.isArray(data)) {
         const openIncidents = data.filter(
-          (item: Incident) => (item.status || "").toUpperCase() === "OPEN"
+          (item: Incident) => (item.status || '').toUpperCase() === 'OPEN'
         );
         setIncidents(openIncidents.slice(0, 5));
       } else {
@@ -131,6 +106,24 @@ export default function CommandCenter() {
     }
   }, []);
 
+  useEffect(() => {
+    if (alerts.length === 0) return;
+
+    toast.success('New Alert 🚨');
+
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {});
+    }
+
+    loadSummary();
+    loadThreatLevel();
+    loadIncidents();
+
+    if (feedRef.current) {
+      feedRef.current.scrollTop = 0;
+    }
+  }, [alerts, loadSummary, loadThreatLevel, loadIncidents]);
+
   /* ================= INITIAL LOAD ================= */
 
   useEffect(() => {
@@ -138,11 +131,7 @@ export default function CommandCenter() {
 
     async function init() {
       try {
-        await Promise.all([
-          loadSummary(),
-          loadThreatLevel(),
-          loadIncidents(),
-        ]);
+        await Promise.all([loadSummary(), loadThreatLevel(), loadIncidents()]);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -167,53 +156,53 @@ export default function CommandCenter() {
   const handleBlockIP = async () => {
     const ip = extractIP(alerts[0]?.message);
 
-    if (!ip) return toast.error("No valid IP found");
+    if (!ip) return toast.error('No valid IP found');
 
     try {
-      await apiFetch("/actions/block-ip", {
-        method: "POST",
+      await apiFetch('/actions/block-ip', {
+        method: 'POST',
         body: JSON.stringify({ ip }),
       });
 
       toast.success(`Blocked IP: ${ip}`);
       loadIncidents();
     } catch {
-      toast.error("Failed to block IP");
+      toast.error('Failed to block IP');
     }
   };
 
   const handleIsolateHost = async () => {
     const ip = extractIP(alerts[0]?.message);
 
-    if (!ip) return toast.error("No valid host");
+    if (!ip) return toast.error('No valid host');
 
     try {
-      await apiFetch("/actions/isolate-host", {
-        method: "POST",
+      await apiFetch('/actions/isolate-host', {
+        method: 'POST',
         body: JSON.stringify({ host: ip }),
       });
 
       toast.success(`Isolated: ${ip}`);
       loadIncidents();
     } catch {
-      toast.error("Failed to isolate host");
+      toast.error('Failed to isolate host');
     }
   };
 
   const handleCloseIncident = async () => {
     const incident = incidents[0];
 
-    if (!incident?.id) return toast.error("No incident selected");
+    if (!incident?.id) return toast.error('No incident selected');
 
     try {
       await apiFetch(`/actions/incident/${incident.id}/close`, {
-        method: "POST",
+        method: 'POST',
       });
 
-      toast.success("Incident closed");
+      toast.success('Incident closed');
       loadIncidents();
     } catch {
-      toast.error("Failed to close incident");
+      toast.error('Failed to close incident');
     }
   };
 
@@ -228,23 +217,23 @@ export default function CommandCenter() {
   }
 
   const severityData = [
-    { severity: "CRITICAL", count: summary.critical },
-    { severity: "HIGH", count: summary.high },
-    { severity: "MEDIUM", count: summary.medium },
-    { severity: "LOW", count: summary.low },
+    { severity: 'CRITICAL', count: summary.critical },
+    { severity: 'HIGH', count: summary.high },
+    { severity: 'MEDIUM', count: summary.medium },
+    { severity: 'LOW', count: summary.low },
   ];
 
   const hasData =
     summary.critical + summary.high + summary.medium + summary.low > 0;
 
   const threatLevelColor =
-    threatLevel?.level === "CRITICAL"
-      ? "text-red-500 animate-pulse"
-      : threatLevel?.level === "HIGH"
-      ? "text-orange-400"
-      : threatLevel?.level === "ELEVATED" || threatLevel?.level === "MEDIUM"
-      ? "text-yellow-400"
-      : "text-green-400";
+    threatLevel?.level === 'CRITICAL'
+      ? 'text-red-500 animate-pulse'
+      : threatLevel?.level === 'HIGH'
+        ? 'text-orange-400'
+        : threatLevel?.level === 'ELEVATED' || threatLevel?.level === 'MEDIUM'
+          ? 'text-yellow-400'
+          : 'text-green-400';
 
   return (
     <div className="min-h-screen text-white p-8 bg-[#020617] max-w-[1400px] mx-auto">
@@ -259,7 +248,7 @@ export default function CommandCenter() {
 
       {threatLevel && (
         <div className="mb-8 p-4 rounded-xl text-center font-bold bg-slate-800 border border-slate-700">
-          GLOBAL THREAT LEVEL:{" "}
+          GLOBAL THREAT LEVEL:{' '}
           <span className={threatLevelColor}>{threatLevel.level}</span>
         </div>
       )}
@@ -273,28 +262,24 @@ export default function CommandCenter() {
 
         <div ref={feedRef} className="max-h-80 overflow-y-auto space-y-2">
           {alerts.length === 0 && (
-            <div className="text-gray-500 text-sm">
-              No live alerts yet.
-            </div>
+            <div className="text-gray-500 text-sm">No live alerts yet.</div>
           )}
 
           {alerts.map((alert, index) => (
             <div key={index} className="p-3 bg-slate-800 rounded">
               {alert.message}
 
-              <div className="text-xs text-gray-400">
-                {alert.severity}
-              </div>
+              <div className="text-xs text-gray-400">{alert.severity}</div>
 
               {/* 🔥 AI RISK COLOR SYSTEM */}
               {alert.risk_score !== undefined && (
                 <div
                   className={`text-xs font-bold ${
                     alert.risk_score > 80
-                      ? "text-red-500"
+                      ? 'text-red-500'
                       : alert.risk_score > 50
-                      ? "text-yellow-400"
-                      : "text-green-400"
+                        ? 'text-yellow-400'
+                        : 'text-green-400'
                   }`}
                 >
                   AI Risk: {alert.risk_score}
@@ -307,7 +292,10 @@ export default function CommandCenter() {
 
       {/* 🔥 QUICK ACTIONS */}
       <div className="mt-6 flex gap-4">
-        <button onClick={handleBlockIP} className="px-4 py-2 bg-red-600 rounded">
+        <button
+          onClick={handleBlockIP}
+          className="px-4 py-2 bg-red-600 rounded"
+        >
           Block IP
         </button>
 
@@ -339,9 +327,7 @@ export default function CommandCenter() {
         {hasData ? (
           <SeverityPie data={severityData} />
         ) : (
-          <div className="text-gray-500 text-sm">
-            No alert data available.
-          </div>
+          <div className="text-gray-500 text-sm">No alert data available.</div>
         )}
       </div>
 

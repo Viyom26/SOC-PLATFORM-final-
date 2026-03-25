@@ -3,7 +3,11 @@ import uuid
 
 def load_default_rules(db):
 
-    if db.query(DetectionRule).count() > 0:
+    count = db.query(DetectionRule).count()
+    print("🔍 Rule Loader - Existing count:", count)
+
+    if count > 0:
+        print("⚠️ Rules already exist, skipping insert")
         return
 
     rules = [
@@ -38,3 +42,5 @@ def load_default_rules(db):
 
     db.add_all(rules)
     db.commit()
+
+    print("✅ Default detection rules inserted")

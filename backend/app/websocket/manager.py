@@ -1,3 +1,5 @@
+from multiprocessing.dummy import connection
+
 from fastapi import WebSocket
 from typing import List
 import asyncio  # ✅ added (safe async handling)
@@ -30,9 +32,15 @@ class ConnectionManager:
 
         disconnected = []
 
-        for connection in list(self.active_connections):  # ✅ SAFE COPY
+        for connection in list(self.active_connections):
             try:
+                # 🔥 CHECK CONNECTION STATE (IMPORTANT FIX)
+                if connection.client_state.name != "CONNECTED":
+                    disconnected.append(connection)
+                    continue
+
                 await connection.send_json(message)
+
             except Exception as e:
                 print("Send failed:", e)
                 disconnected.append(connection)

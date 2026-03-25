@@ -49,7 +49,7 @@ def get_threat_summary(db: Session, source_ip=None, destination_ip=None):
 
         results = (
             query
-            .group_by(ThreatLog.source_ip)
+            .group_by(ThreatLog.source_ip, ThreatLog.destination_ip)
             .order_by(func.count(ThreatLog.id).desc())
             .all()
         )
@@ -57,7 +57,7 @@ def get_threat_summary(db: Session, source_ip=None, destination_ip=None):
     elif source_ip:
         results = (
             query
-            .group_by(ThreatLog.destination_ip)
+            .group_by(ThreatLog.source_ip, ThreatLog.destination_ip)
             .order_by(func.count(ThreatLog.id).desc())
             .all()
         )

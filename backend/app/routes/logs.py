@@ -1,3 +1,6 @@
+from gettext import find
+from logging import log
+from unittest import result
 import uuid
 import re
 import os
@@ -22,7 +25,7 @@ from app.security import require_role
 from app.websocket.manager import manager
 
 from app.services.alert_service import create_alert
-from app.services.detection_engine import detect_port_scan
+from app.services.detection_engine import detect_port_scan, run_detection_engine
 from app.services.response_engine import automated_response
 from app.services.audit_service import log_action
 from app.services.correlation_engine import correlate_alert
@@ -34,12 +37,19 @@ router = APIRouter(prefix="/logs", tags=["Logs"])
 DEFAULT_SOC_TARGET = "192.168.1.10"
 
 MITRE_MAP = {
-    "port scan": ("Discovery", "T1046"),
-    "brute force": ("Credential Access", "T1110"),
+    "scan": ("Discovery", "T1046"),
+    "probe": ("Discovery", "T1046"),
+    "brute": ("Credential Access", "T1110"),
+    "login failed": ("Credential Access", "T1110"),
+    "malware": ("Execution", "T1059"),
+    "exploit": ("Execution", "T1059"),
     "callback": ("Command and Control", "T1071"),
-    "suspicious service": ("Persistence", "T1543"),
-    "malicious behavior": ("Execution", "T1059"),
-    "unregistered service": ("Persistence", "T1543"),
+    "c2": ("Command and Control", "T1071"),
+    "suspicious": ("Persistence", "T1543"),
+    "service": ("Persistence", "T1543"),
+    "url": ("Command and Control", "T1071"),   # 🔥 ADD THIS
+    "http": ("Command and Control", "T1071"),  # 🔥 ADD THIS
+    "https": ("Command and Control", "T1071"), # 🔥 ADD THIS
 }
 
 progress_store = {}
@@ -87,7 +97,7 @@ def get_logs(
         db.query(ThreatLog)
         .filter(ThreatLog.user_email == user["sub"])
         .order_by(ThreatLog.created_at.desc())
-        .limit(200)
+        .limit(50000)
         .all()
     )
 
@@ -103,7 +113,9 @@ def get_logs(
                 "protocol": log.protocol,
                 "severity": log.severity,
                 "threat": log.message,
-                "created_at": log.created_at.isoformat() if log.created_at else None,
+                "created_at": log.created_at.isoformat() if log.created_at else None,  # ✅ FIX HERE
+                "mitre_tactic": log.mitre_tactic,
+                "mitre_technique": log.mitre_technique,
             }
         )
 
@@ -124,12 +136,12 @@ async def parse_logs(
 
     db.query(ThreatLog).delete()
     db.query(Incident).delete()
-    db.commit()
+    
 
     UPLOAD_DIR = "uploads"
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-    filename = file.filename.lower() if file else "raw_input.log"
+    filename = file.filename.lower() if file and file.filename else "raw_input.log"
     file_path = f"{UPLOAD_DIR}/{filename}"
 
     if file:
@@ -155,6 +167,11 @@ def process_logs(file_path, filename, username):
 
     logs_to_add = []
     alerts_to_stream = []
+    
+    # 🚀 PERFORMANCE BOOST (ADD HERE)
+    existing_ips = set(
+        ip for (ip,) in db.query(Asset.ip).all()
+    )
 
     try:
 
@@ -165,14 +182,30 @@ def process_logs(file_path, filename, username):
         if filename.endswith(".xlsx"):
             workbook = load_workbook(data_only=True, read_only=True, filename=file_path)
             sheet = workbook.active
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                rows_cache.append(row)
+
+            rows = list(sheet.iter_rows(values_only=True)) # type: ignore
+
+            if not rows:
+                return
+
+            # ✅ HEADER DETECTION
+            headers = [str(h).lower().strip() if h else "" for h in rows[0]]
+
+            print("HEADERS:", headers)  # optional debug
+
+            for row in rows[1:]:
+                rows_cache.append((headers, row))
 
         elif filename.endswith(".csv"):
             with open(file_path, encoding="utf-8", errors="ignore") as f:
                 reader = csv.reader(f)
-                for row in reader:
-                    rows_cache.append(row)
+                rows = list(reader)
+
+                if rows:
+                    headers = [str(h).lower().strip() for h in rows[0]]
+
+                    for row in rows[1:]:
+                        rows_cache.append((headers, row))
 
         elif filename.endswith(".json"):
             with open(file_path, encoding="utf-8", errors="ignore") as f:
@@ -205,25 +238,95 @@ def process_logs(file_path, filename, username):
             "processed": 0
         }
 
-        def parse_row(row):
-
+        def parse_row(data):
+    
             try:
 
-                row_text = " ".join([str(x) for x in row if x])
-                event_time = parse_timestamp(row) or datetime.now(timezone.utc)
+                # ✅ HANDLE BOTH TYPES
+                if isinstance(data, tuple):
+                    headers, row = data
 
-                ip_matches = re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", row_text)
+                    row_dict = {}
+                    for i, key in enumerate(headers):
+                        if key and i < len(row):
+                            row_dict[key] = row[i]
 
-                source_ip = ip_matches[0] if ip_matches else "0.0.0.0"
-                destination_ip = ip_matches[1] if len(ip_matches) > 1 else DEFAULT_SOC_TARGET
-                
-                # ================= AUTO CREATE ASSET =================
+                    def find(keywords):
+                        for k, v in row_dict.items():
+                            for keyword in keywords:
+                                if keyword in k:
+                                    return v
+                        return None
+
+                    source_ip = find(["src", "source"])
+                    destination_ip = find(["dst", "destination"])
+                    source_port = find(["src port", "source port"]) or "0"
+                    destination_port = find(["dst port", "destination port"]) or "0"
+                    protocol = (find(["protocol"]) or "UNKNOWN").upper()
+                    message = find(["message", "threat", "log"]) or "No message"
+                    event_time = find(["time", "date"]) or datetime.now(timezone.utc)
+                    file_severity = find(["severity", "level"])
+                    
+                    if not source_ip:
+                        return
+
+                else:
+                    # 🔥 SMART PARSING (NON-EXCEL FILES)
+                    row = data
+                    row_text = " ".join([str(x) for x in row if x])
+
+                    # 🔥 IP DETECTION
+                    ip_matches = re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", row_text)
+                    source_ip = ip_matches[0] if ip_matches else "0.0.0.0"
+                    destination_ip = ip_matches[1] if len(ip_matches) > 1 else DEFAULT_SOC_TARGET
+
+                    # 🔥 PORT DETECTION
+                    port_matches = re.findall(r":(\d{1,5})", row_text)
+                    if len(port_matches) >= 2:
+                        source_port = port_matches[0]
+                        destination_port = port_matches[1]
+                    elif len(port_matches) == 1:
+                        source_port = port_matches[0]
+                        destination_port = "0"
+                    else:
+                        source_port = "0"
+                        destination_port = "0"
+
+                    # 🔥 PROTOCOL DETECTION
+                    protocol = "Unknown"
+                    if re.search(r"\btcp\b", row_text, re.IGNORECASE):
+                        protocol = "TCP"
+                    elif re.search(r"\budp\b", row_text, re.IGNORECASE):
+                        protocol = "UDP"
+                    elif re.search(r"\bicmp\b", row_text, re.IGNORECASE):
+                        protocol = "ICMP"
+                    elif re.search(r"\bhttp\b", row_text, re.IGNORECASE):
+                        protocol = "HTTP"
+                    elif re.search(r"\bhttps\b", row_text, re.IGNORECASE):
+                        protocol = "HTTPS"
+
+                    # 🔥 MESSAGE
+                    message = row_text
+                    
+                    file_severity = None  # ✅ FIX: avoid undefined variable
+
+                    # 🔥 TIME DETECTION
+                    event_time = parse_timestamp(row) or datetime.now(timezone.utc)
+
+                # ✅ FIX TIME
+                if isinstance(event_time, str):
+                    event_time = parse_timestamp([event_time]) or datetime.now(timezone.utc)
+
+                row_text = str(message)
+                row_text_lower = row_text.lower()
+
+                # ================= KEEP YOUR EXISTING LOGIC =================
+
+                # AUTO CREATE ASSET
                 try:
-                    existing_asset = db.query(Asset).filter(
-                        Asset.ip == source_ip
-                    ).first()
-
-                    if not existing_asset:
+                    # 🚀 FAST ASSET CHECK (REPLACE HERE)
+                    if source_ip not in existing_ips:
+                        existing_ips.add(source_ip)
 
                         new_asset = Asset(
                             id=str(uuid.uuid4()),
@@ -232,32 +335,39 @@ def process_logs(file_path, filename, username):
                             owner="Auto-Discovered",
                             criticality="LOW"
                         )
-
                         db.add(new_asset)
-                        db.commit()
-
-                        print(f"[ASSET] New asset discovered: {source_ip}")
 
                 except Exception as e:
                     print("Asset creation failed:", e)
 
-                row_lower = row_text.lower()
+                # PROTOCOL NORMALIZATION
+                if file_severity and str(file_severity).strip():
+                    severity = str(file_severity).strip().upper()
+                else:
+                    # SEVERITY DETECTION
+                    severity = "LOW"
 
-                protocol = "Unknown"
-                if "tcp" in row_lower:
-                    protocol = "TCP"
-                elif "udp" in row_lower:
-                    protocol = "UDP"
-                elif "icmp" in row_lower:
-                    protocol = "ICMP"
+                    if re.search(r"(critical|ransomware|data breach|root access)", row_text_lower):
+                        severity = "CRITICAL"
 
-                severity = "LOW"
-                if "critical" in row_lower:
-                    severity = "CRITICAL"
-                elif "attack" in row_lower:
-                    severity = "HIGH"
-                elif "scan" in row_lower:
-                    severity = "MEDIUM"
+                    elif re.search(r"(attack|brute force|exploit|malware|unauthorized)", row_text_lower):
+                        severity = "HIGH"
+
+                    elif re.search(r"(scan|probe|suspicious|recon)", row_text_lower):
+                        severity = "MEDIUM"
+
+                    elif re.search(r"(failed|invalid|denied)", row_text_lower):
+                        severity = "LOW"
+                        
+                    # 🔥 DETECTION ENGINE FIX
+                    try:
+                        result = detect_port_scan(db, source_ip)
+
+                        if result:
+                            print("DETECTION TRIGGERED:", result)
+
+                    except Exception as e:
+                        print("Detection failed:", e)
 
                 risk_map = {
                     "CRITICAL": 95,
@@ -268,21 +378,9 @@ def process_logs(file_path, filename, username):
 
                 risk_score = risk_map.get(severity, 10)
 
-                # 🔥 CORRELATION + AUTOMATION (FIXED POSITION)
-                if severity in ["CRITICAL", "HIGH", "MEDIUM"] or risk_score >= 50:
+                # ALERT LOGIC
+                if severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
 
-                    try:
-                        incident = correlate_alert(db, {
-                            "ip": source_ip,
-                            "severity": severity
-                        })
-
-                        auto_response(db, incident)
-
-                    except Exception as e:
-                        print("Correlation failed:", e)
-
-                    # 🔥 ALERT CREATION (FIXED CORRECT)
                     try:
                         create_alert(
                             db=db,
@@ -293,32 +391,44 @@ def process_logs(file_path, filename, username):
                             classification=row_text
                         )
 
-                        # ✅ ALWAYS append after success
-                        alerts_to_stream.append({
-                            "source_ip": source_ip,
-                            "destination_ip": destination_ip,
-                            "severity": severity,
-                            "risk_score": risk_score,
-                            "message": row_text
-                        })
-                    
-                    except Exception as e:
-                        print("Alert creation failed:", e)
+                        # 🔥 FIX: LOG = INCIDENT (NO GROUPING)
+                        new_incident = Incident(
+                            id=str(uuid.uuid4()),
+                            source_ip=source_ip,
+                            severity=severity or "LOW",
+                            status="OPEN",
+                            created_at=event_time or datetime.now(timezone.utc),
+                            alert_count=1
+                        )
 
+                        db.add(new_incident)
+
+                    except Exception as e:
+                            print("Alert/Incident failed:", e)
+
+                # MITRE
                 mitre_tactic = None
                 mitre_technique = None
-
                 for key, value in MITRE_MAP.items():
-                    if key in row_lower:
+                    if key in row_text_lower:
                         mitre_tactic, mitre_technique = value
                         break
+                    
+                # 🔥 FALLBACK (IMPORTANT)
+                if not mitre_tactic:
+                    mitre_tactic = "Command and Control"
+                    mitre_technique = "T1071"
 
+                # ✅ SAFETY FIX (ADD HERE)
+                protocol = protocol if protocol else "UNKNOWN"
+                
+                # SAVE LOG
                 log = ThreatLog(
                     id=str(uuid.uuid4()),
                     source_ip=source_ip,
                     destination_ip=destination_ip,
-                    source_port="0",
-                    destination_port="0",
+                    source_port=str(source_port),
+                    destination_port=str(destination_port),
                     protocol=protocol,
                     severity=severity,
                     risk_score=risk_score,
@@ -332,18 +442,41 @@ def process_logs(file_path, filename, username):
                 )
 
                 logs_to_add.append(log)
+                
+                if len(logs_to_add) >= 2000:
+                    db.add_all(logs_to_add)
+                    db.commit()
+                    logs_to_add.clear()
+                
+                # 🔥 RUN DETECTION ENGINE
+                try:
+                    detection_result = run_detection_engine(db, log)
+
+                    # ✅ ADD THIS BLOCK (VERY IMPORTANT)
+                    if detection_result and processed % 50 == 0:
+                        print("🚨 DETECTED:", detection_result)
+
+                        alert_data = {
+                            "source_ip": log.source_ip,
+                            "severity": log.severity,
+                            "message": f"{detection_result} detected",
+                            "risk_score": log.risk_score,
+                        }
+
+                        alerts_to_stream.append(alert_data)
+                except Exception as e:
+                    print("Detection engine error:", e)
 
             except Exception as e:
                 print("ROW ERROR:", e)
-
+                
         for row in rows_cache:
             parse_row(row)
             processed += 1
             
             progress_store[username]["processed"] = processed
             
-            # 🔥 SEND LIVE PROGRESS EVERY 50 LOGS
-            if processed % 50 == 0:
+            if processed % 500 == 0 or processed == total_rows:
                 try:
                     asyncio.run(manager.broadcast({
                         "type": "PROGRESS_UPDATE",
@@ -352,18 +485,9 @@ def process_logs(file_path, filename, username):
                     }))
                 except:
                     pass
-            
-            try:
-                asyncio.run(manager.broadcast({
-                    "type": "PROGRESS_UPDATE",
-                    "processed": processed,
-                    "total": total_rows
-                }))
-            except:
-                pass
 
         if logs_to_add:
-            db.bulk_save_objects(logs_to_add)
+            db.add_all(logs_to_add)
 
         log_action(
             db,
@@ -416,7 +540,10 @@ def process_logs(file_path, filename, username):
 
 @router.get("/search")
 def search_logs(
-    query: str = "",
+    source_ip: str = "",
+    destination_ip: str = "",
+    severity: str = "",
+    protocol: str = "",
     page: int = 1,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -429,11 +556,17 @@ def search_logs(
         ThreatLog.user_email == user["sub"]
     )
 
-    if query:
-        q = q.filter(
-            ThreatLog.source_ip.contains(query) |
-            ThreatLog.message.contains(query)
-        )
+    if source_ip:
+        q = q.filter(ThreatLog.source_ip.contains(source_ip))
+
+    if destination_ip:
+        q = q.filter(ThreatLog.destination_ip.contains(destination_ip))
+
+    if severity:
+        q = q.filter(ThreatLog.severity == severity.upper())
+
+    if protocol:
+        q = q.filter(ThreatLog.protocol == protocol.upper())
 
     logs = (
         q.order_by(ThreatLog.created_at.desc())

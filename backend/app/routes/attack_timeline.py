@@ -33,7 +33,7 @@ def get_attack_timeline(
         timeline.append({
             "ip": log.source_ip,
             "event": log.message,
-            "severity": log.severity,
+            "severity": (log.severity or "LOW").upper(),
             "time": log.created_at
         })
 

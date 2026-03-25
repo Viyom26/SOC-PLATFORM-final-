@@ -16,28 +16,25 @@ class Incident(Base):
 
     status = Column(String, default="OPEN", index=True)
 
-    assigned_to = Column(String, nullable=True)
-
+    # 🔥 KEEP ONLY ONE (avoid confusion)
     owner = Column(String, nullable=True)
 
-    # ✅ ensure consistent UTC timestamps
+    # ✅ UTC timestamps (SAFE)
     created_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc)
     )
 
-    # ⭐ added for SOC updates / tracking
     updated_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
-    
-    # ✅ REQUIRED (you already added correctly)
+
     closed_at = Column(DateTime, nullable=True)
 
-    # ✅ NEW: alert counter (FIXES YOUR ERROR)
+    # ✅ IMPORTANT (used in logs.py)
     alert_count = Column(Integer, default=1)
 
-    # ✅ NEW: relationship with alerts
-    alerts = relationship("Alert", back_populates="incident")
+    # ✅ OPTIONAL RELATION (only if Alert model supports it)
+    alerts = relationship("Alert", back_populates="incident", cascade="all, delete")

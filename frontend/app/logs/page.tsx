@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import "./logs.css";
-import { useState, useEffect } from "react";
-import { apiFetch } from "@/lib/api";
-import Card from "@/components/ui/Card";
-import HistoryPanel from "@/components/HistoryPanel";
+import './logs.css';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { apiFetch } from '@/lib/api';
+import Card from '@/components/ui/Card';
+import HistoryPanel from '@/components/HistoryPanel';
 
 type ParsedLog = {
   src_ip?: string;
@@ -24,29 +24,26 @@ type LogsResponse =
     };
 
 export default function LogsPage() {
-
-  const [rawText, setRawText] = useState("");
+  const [rawText, setRawText] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState("");
+  const [fileName, setFileName] = useState('');
   const [logs, setLogs] = useState<ParsedLog[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
   const [totalLogs, setTotalLogs] = useState(0);
-  
+  const tableRef = useRef<HTMLDivElement>(null);
 
   const safe = (val: unknown) =>
-    val === null || val === undefined || val === "" ? "N/A" : String(val);
+    val === null || val === undefined || val === '' ? 'N/A' : String(val);
 
   /* ================= NORMAL FETCH ================= */
 
-  const fetchLogs = async () => {
-
+  const fetchLogs = useCallback(async () => {
     try {
-
-      const data: LogsResponse = await apiFetch("/logs");
+      const data: LogsResponse = await apiFetch('/logs');
 
       if (Array.isArray(data)) {
         setLogs(data);
@@ -60,23 +57,17 @@ export default function LogsPage() {
 
       setLogs([]);
       return [];
-
     } catch (err) {
-
-      console.error("Fetch logs error:", err);
+      console.error('Fetch logs error:', err);
       setLogs([]);
       return [];
-
     }
-
-  };
+  }, []);
 
   /* ================= SEARCH LOGS ================= */
 
   const searchLogs = async () => {
-
     try {
-
       const data = await apiFetch(
         `/logs/search?query=${searchQuery}&page=${page}`
       );
@@ -88,76 +79,105 @@ export default function LogsPage() {
       } else {
         setLogs([]);
       }
-
     } catch (err) {
-      console.error("Search error:", err);
+      console.error('Search error:', err);
       setLogs([]);
     }
-
   };
 
   /* ================= INITIAL LOAD ================= */
 
   useEffect(() => {
-  const interval = setInterval(async () => {
-    try {
-      const res = await apiFetch("/logs/progress");
+    fetchLogs();
 
-      if (!res) return;
+    // ✅ CONNECT TO BACKEND WEBSOCKET
+    const ws = new WebSocket('ws://localhost:8000/ws/alerts');
 
-      setProgress(res.processed || 0);
-      setTotalLogs(res.total || 0);
+    ws.onopen = () => {
+      console.log('✅ WebSocket Connected');
+    };
 
-      // ✅ AUTO LOAD LOGS WHEN DONE
-      if (res.total > 0 && res.processed === res.total) {
-        await fetchLogs();
-        clearInterval(interval);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        // 🔥 HANDLE PROGRESS UPDATE
+        if (data.type === 'PROGRESS_UPDATE') {
+          setProgress(data.processed || 0);
+          setTotalLogs(data.total || 0);
+
+          // ✅ AUTO FETCH WHEN DONE
+          if (data.total > 0 && data.processed === data.total) {
+            setTimeout(() => fetchLogs(), 1000);
+          }
+        }
+
+        // 🚀 NEW: LIVE ALERT → ADD TO TABLE
+        if (data.type === 'NEW_ALERT') {
+          const newLog = {
+            src_ip: data.source_ip,
+            dst_ip: 'N/A',
+            src_port: '0',
+            dst_port: '0',
+            protocol: 'N/A',
+            threat: data.message,
+            created_at: new Date().toISOString(),
+          };
+
+          setLogs((prev) => [newLog, ...prev]); // 🔥 LIVE ADD
+
+          // 🔥 AUTO SCROLL TO TOP
+          setTimeout(() => {
+            tableRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        }
+      } catch (err) {
+        console.error('WS parse error:', err);
       }
+    };
 
-    } catch (err) {
-      console.error("Progress polling error:", err);
-    }
-  }, 1000);
+    ws.onclose = () => {
+      console.log('❌ WebSocket Disconnected');
+    };
 
-  return () => clearInterval(interval);
-}, []);
-
+    return () => {
+      ws.close();
+    };
+  }, [fetchLogs]);
 
   /* ================= PARSE LOGS ================= */
 
   const convertLogs = async (e?: React.MouseEvent<HTMLButtonElement>) => {
-
     if (e) e.preventDefault();
 
     if (loading) return;
 
     if (!rawText && !file) {
-      setError("Please paste logs or upload a file.");
+      setError('Please paste logs or upload a file.');
       return;
     }
 
     try {
-
       setLoading(true);
-      setError("");
+      setError('');
       setLogs([]);
 
       const formData = new FormData();
 
       if (rawText) {
-        formData.append("raw_text", rawText);
+        formData.append('raw_text', rawText);
       }
 
       if (file) {
-        formData.append("file", file);
+        formData.append('file', file);
       }
 
-      await apiFetch("/logs/parse", {
-        method: "POST",
+      await apiFetch('/logs/parse', {
+        method: 'POST',
         body: formData,
       });
 
-      setError("Logs uploaded. Processing may take a few seconds...");
+      setError('Logs uploaded. Processing may take a few seconds...');
       // ✅ RESET PROGRESS UI
       setProgress(0);
       setTotalLogs(1); // force bar visible immediately
@@ -165,7 +185,6 @@ export default function LogsPage() {
       let attempts = 0;
 
       const checkLogs = async () => {
-
         attempts++;
 
         const newLogs = await fetchLogs();
@@ -173,38 +192,29 @@ export default function LogsPage() {
         if (newLogs.length === 0 && attempts < 10) {
           setTimeout(checkLogs, 3000);
         }
-
       };
 
       setTimeout(checkLogs, 3000);
 
-      setRawText("");
+      setRawText('');
       setFile(null);
-      setFileName("");
-
+      setFileName('');
     } catch (e: unknown) {
-
-      console.error("Parser error:", e);
+      console.error('Parser error:', e);
 
       setError(
-        "Log processing started in background. Please wait a few seconds..."
+        'Log processing started in background. Please wait a few seconds...'
       );
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   return (
     <div className="logs-page max-w-[1500px] mx-auto">
-
       <h1 className="page-title">Log Parser</h1>
 
       <Card title="Input Logs">
-
         <textarea
           rows={6}
           placeholder="Paste raw log lines here..."
@@ -214,17 +224,14 @@ export default function LogsPage() {
         />
 
         <div className="file-upload-wrapper">
-
           <label className="file-upload-label">
             Choose File
-
             <input
               type="file"
               accept=".txt,.log,.csv,.xlsx"
               className="file-upload-input"
               disabled={loading}
               onChange={(e) => {
-
                 const selected = e.target.files?.[0] || null;
 
                 if (selected) {
@@ -232,18 +239,15 @@ export default function LogsPage() {
                   setFileName(selected.name);
                 } else {
                   setFile(null);
-                  setFileName("");
+                  setFileName('');
                 }
-
               }}
             />
-
           </label>
 
           <span className="file-name">
-            {fileName ? fileName : "No file selected"}
+            {fileName ? fileName : 'No file selected'}
           </span>
-
         </div>
 
         <button
@@ -252,38 +256,42 @@ export default function LogsPage() {
           disabled={loading}
           className="primary-btn"
         >
-          {loading ? "Parsing logs..." : "Convert Logs"}
+          {loading ? 'Parsing logs...' : 'Convert Logs'}
         </button>
 
-        {(
-          
-  <div style={{ marginTop: "15px" }}>
-    <div
-      style={{
-        height: "10px",
-        background: "#1e293b",
-        borderRadius: "6px",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          width: `${totalLogs > 0 ? (progress / totalLogs) * 100 : 0}%`,
-          background: "#22c55e",
-          height: "100%",
-          transition: "0.3s",
-        }}
-      />
-    </div>
+        {
+          <div style={{ marginTop: '15px' }}>
+            <div
+              style={{
+                height: '10px',
+                background: '#1e293b',
+                borderRadius: '6px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${totalLogs > 0 ? (progress / totalLogs) * 100 : 0}%`,
+                  background: 'linear-gradient(90deg,#22c55e,#4ade80,#22c55e)',
+                  height: '100%',
+                  transition: 'width 0.4s ease-in-out',
+                }}
+              />
+            </div>
 
-    <p style={{ marginTop: "5px", fontSize: "12px" }}>
-      Processing {progress} / {totalLogs || "Calculating..."} logs
-    </p>
-  </div>
-)}
+            <p style={{ marginTop: '5px', fontSize: '12px' }}>
+              {totalLogs > 0 ? (
+                <span>
+                  🔄 Processing {progress} / {totalLogs}
+                </span>
+              ) : (
+                <span>⏳ Waiting for logs...</span>
+              )}
+            </p>
+          </div>
+        }
 
         {error && <p className="error-text">{error}</p>}
-
       </Card>
 
       {/* 🔥 SEARCH BAR ADDED HERE */}
@@ -295,32 +303,26 @@ export default function LogsPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") searchLogs();
+            if (e.key === 'Enter') searchLogs();
           }}
-          style={{ padding: "8px", width: "250px", marginRight: "10px" }}
+          style={{ padding: '8px', width: '250px', marginRight: '10px' }}
         />
 
         <button onClick={searchLogs}>Search</button>
       </div>
 
       <Card title="Parsed Output">
-
         {!loading && logs.length === 0 && (
-
           <div className="mt-6 p-6 rounded-lg bg-slate-900 border border-slate-700 text-center">
             <p className="text-slate-400 text-sm tracking-wide">
               Upload logs to see results.
             </p>
           </div>
-
         )}
 
         {logs.length > 0 && (
-
-          <div className="logs-table-wrapper">
-
+          <div ref={tableRef} className="logs-table-wrapper">
             <table className="logs-table">
-
               <thead>
                 <tr>
                   <th>Source IP</th>
@@ -334,9 +336,7 @@ export default function LogsPage() {
               </thead>
 
               <tbody>
-
                 {logs.map((l, i) => {
-
                   const time = l.event_time || l.created_at;
 
                   return (
@@ -349,60 +349,63 @@ export default function LogsPage() {
                       <td>{safe(l.threat)}</td>
                       <td>
                         {time
-                          ? new Date(time).toLocaleString("en-IN", {
-                              timeZone: "Asia/Kolkata",
-                              year: "numeric",
-                              month: "short",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit"
+                          ? new Date(time).toLocaleString('en-IN', {
+                              timeZone: 'Asia/Kolkata',
+                              year: 'numeric',
+                              month: 'short',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
                             })
-                          : "N/A"}
+                          : 'N/A'}
                       </td>
                     </tr>
                   );
-
                 })}
-
               </tbody>
-
             </table>
-
           </div>
-
         )}
-
       </Card>
 
       {/* 🔥 PAGINATION ADDED */}
 
       <div className="pagination">
-  <button
-    onClick={() => {
-      const newPage = Math.max(1, page - 1);
-      setPage(newPage);
-      setTimeout(searchLogs, 0);
-    }}
-  >
-    Prev
-  </button>
+        <button
+          onClick={() => {
+            const newPage = Math.max(1, page - 1);
+            setPage(newPage);
 
-  <span className="page-text">Page {page}</span>
+            if (searchQuery) {
+              setTimeout(() => searchLogs(), 0);
+            } else {
+              setTimeout(() => fetchLogs(), 0);
+            }
+          }}
+        >
+          Prev
+        </button>
 
-  <button
-    onClick={() => {
-      const newPage = page + 1;
-      setPage(newPage);
-      setTimeout(searchLogs, 0);
-    }}
-  >
-    Next
-  </button>
-</div>
+        <span className="page-text">Page {page}</span>
+
+        <button
+          onClick={() => {
+            const newPage = page + 1;
+            setPage(newPage);
+
+            if (searchQuery) {
+              setTimeout(() => searchLogs(), 0);
+            } else {
+              setTimeout(() => fetchLogs(), 0);
+            }
+          }}
+        >
+          Next
+        </button>
+      </div>
 
       <HistoryPanel pageFilter="logs" />
-
     </div>
   );
 }

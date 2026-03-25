@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from app.db import get_db # pyright: ignore[reportMissingImports]
+from app.database import get_db
 from app.models.log import Log # pyright: ignore[reportMissingImports]
 from app.services.score import calculate_ip_score
 
