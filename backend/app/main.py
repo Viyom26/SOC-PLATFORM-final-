@@ -1,8 +1,16 @@
 import uuid
 from datetime import datetime
-
 from fastapi import FastAPI, HTTPException, Depends
+# 🔐 SECURITY HEADERS
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
+
+# 🔐 RATE LIMITING (ADD THIS)
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.errors import RateLimitExceeded
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from app.utils.security import get_password_hash
@@ -62,7 +70,45 @@ try:
 except (OperationalError, SQLAlchemyError) as e:  # ✅ UPDATED
     print("⚠️ DB init skipped (already exists or race condition):", e)
 
-app = FastAPI(title="SOC Backend", version="2.2")
+app = FastAPI(
+    title="SOC Backend",
+    version="2.2",
+    docs_url="/docs",
+    redoc_url=None,
+)
+
+# 🔐 SECURITY HEADERS MIDDLEWARE
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self' ws: wss:;"
+    )
+
+    return response
+
+# 🔐 RATE LIMITER SETUP
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
+# 🔐 HANDLE RATE LIMIT ERROR
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Slow down."}
+    )
 
 # ================= STARTUP EVENT (IMPROVED) =================
 
@@ -201,7 +247,8 @@ class RegisterSchema(BaseModel):
 
 
 @app.post("/auth/register")
-def register(data: RegisterSchema, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # 🔐 PROTECT REGISTER
+def register(request: Request, data: RegisterSchema, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already exists")
 
@@ -222,19 +269,31 @@ def register(data: RegisterSchema, db: Session = Depends(get_db)):
 
 
 @app.post("/auth/login")
+@limiter.limit("5/minute")  # 🔐 PROTECT LOGIN
 def login(
+    request: Request, 
     form: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == form.username).first()
 
-    if not user or not verify_password(form.password, user.hashed_password):
+    if not user or not verify_password(form.password, str(user.hashed_password)):
+
+    # 🔐 SECURITY LOG
+        log_action(
+            db,
+            "FAILED_LOGIN",
+            form.username,
+            details="Invalid login attempt",
+            page="auth"
+        )
+
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     log_action(
         db,
         "LOGIN",
-        user.email,
+        user.email, # type: ignore
         details="User logged in",
         page="auth"
     )
@@ -257,7 +316,9 @@ def me(user=Depends(get_current_user)):
 # ================= LOGS =================
 
 @app.get("/logs")
-def get_logs(
+@limiter.limit("20/minute")
+async def get_logs(
+    request: Request,
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
     db: Session = Depends(get_db),
 ):
@@ -292,7 +353,9 @@ def get_logs(
 # ================= INCIDENTS =================
 
 @app.get("/incidents")
-def get_incidents(
+@limiter.limit("20/minute")
+async def get_incidents(
+    request: Request,
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
     db: Session = Depends(get_db),
 ):
@@ -371,13 +434,13 @@ def get_threat_level(
 
     avg_risk = sum(l.risk_score or 0 for l in logs) / len(logs)
 
-    if avg_risk >= 85:
+    if avg_risk >= 85: # type: ignore
         level = "CRITICAL"
-    elif avg_risk >= 70:
+    elif avg_risk >= 70: # type: ignore
         level = "SEVERE"
-    elif avg_risk >= 55:
+    elif avg_risk >= 55: # type: ignore
         level = "HIGH"
-    elif avg_risk >= 35:
+    elif avg_risk >= 35: # type: ignore
         level = "ELEVATED"
     else:
         level = "GUARDED"

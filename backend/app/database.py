@@ -2,8 +2,15 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from pathlib import Path
+from pathlib import Path
 import os  # ✅ NEW
 import time  # ✅ NEW
+
+# 🔐 LOAD ENV VARIABLES (ADD THIS)
+from dotenv import load_dotenv
+load_dotenv()
+
+from sqlalchemy.exc import OperationalError  # ✅ NEW
 from sqlalchemy.exc import OperationalError  # ✅ NEW
 
 # Database path

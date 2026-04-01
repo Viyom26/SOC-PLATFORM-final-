@@ -6,7 +6,9 @@ services:
     depends_on:
       - db
     restart: always
-    environment:  # ✅ NEW (VERY IMPORTANT)
+    env_file: # ✅ ADD THIS BLOCK
+      - ./backend/.env
+    environment: # ✅ NEW (VERY IMPORTANT)
       DATABASE_URL: postgresql://soc_user:soc_pass@db:5432/soc_db
 
   frontend:

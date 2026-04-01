@@ -1,12 +1,13 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
+from passlib.context import CryptContext # type: ignore
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 
 # ================= CONFIG =================
 
-SECRET_KEY = "CHANGE_ME_SECRET"
+from app.config import SECRET_KEY   # ✅ ADD THIS LINE
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

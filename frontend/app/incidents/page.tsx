@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import "./incidents.css";
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
-import HistoryPanel from "@/components/HistoryPanel";
-import Link from "next/link";
+import './incidents.css';
+import { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api';
+import HistoryPanel from '@/components/HistoryPanel';
+import Link from 'next/link';
 
 type Incident = {
   id: string;
@@ -23,7 +23,6 @@ type Asset = {
 };
 
 export default function IncidentsPage() {
-
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -40,9 +39,9 @@ export default function IncidentsPage() {
   /* ================= LOAD USER ================= */
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       try {
-        const stored = JSON.parse(localStorage.getItem("user") || "{}");
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(stored);
       } catch {
         setUser({});
@@ -53,12 +52,10 @@ export default function IncidentsPage() {
   /* ================= LOAD DATA ================= */
 
   async function loadData() {
-
     try {
-
       const [incidentData, assetData] = await Promise.all([
-        apiFetch("/incidents"),
-        apiFetch("/api/assets")
+        apiFetch('/incidents'),
+        apiFetch('/api/assets'),
       ]);
 
       const list: Incident[] = Array.isArray(incidentData) ? incidentData : [];
@@ -74,8 +71,9 @@ export default function IncidentsPage() {
       };
 
       list.forEach((i: Incident) => {
-        const sev =
-          (i.severity || "").toUpperCase() as keyof typeof severityCounts;
+        const sev = (
+          i.severity || ''
+        ).toUpperCase() as keyof typeof severityCounts;
 
         if (severityCounts[sev] !== undefined) {
           severityCounts[sev]++;
@@ -83,13 +81,11 @@ export default function IncidentsPage() {
       });
 
       setCounts(severityCounts);
-
     } catch (err) {
-      console.error("Failed to load incidents", err);
+      console.error('Failed to load incidents', err);
     } finally {
       setLoading(false);
     }
-
   }
 
   useEffect(() => {
@@ -101,30 +97,30 @@ export default function IncidentsPage() {
   /* ================= HELPERS ================= */
 
   function getAsset(ip: string) {
-    return assets.find(a => a.ip === ip);
+    return assets.find((a) => a.ip === ip);
   }
 
   function rowClass(severity?: string) {
-    const s = (severity || "").toUpperCase();
+    const s = (severity || '').toUpperCase();
 
-    if (s === "CRITICAL") return "row-critical";
-    if (s === "HIGH") return "row-high";
-    if (s === "MEDIUM") return "row-medium";
-    if (s === "LOW") return "row-low";
+    if (s === 'CRITICAL') return 'row-critical';
+    if (s === 'HIGH') return 'row-high';
+    if (s === 'MEDIUM') return 'row-medium';
+    if (s === 'LOW') return 'row-low';
 
-    return "";
+    return '';
   }
 
   /* ================= STATUS COLORS ================= */
 
   const statusColor: Record<string, string> = {
-    OPEN: "text-red-500",
-    INVESTIGATING: "text-yellow-400",
-    CONTAINED: "text-orange-400",
-    RESOLVED: "text-green-400",
-    CLOSED: "text-gray-400",
-    BLOCKED: "text-red-700",
-    ISOLATED: "text-purple-400",
+    OPEN: 'text-red-500',
+    INVESTIGATING: 'text-yellow-400',
+    CONTAINED: 'text-orange-400',
+    RESOLVED: 'text-green-400',
+    CLOSED: 'text-gray-400',
+    BLOCKED: 'text-red-700',
+    ISOLATED: 'text-purple-400',
   };
 
   /* ================= ACTIONS ================= */
@@ -134,17 +130,16 @@ export default function IncidentsPage() {
 
     try {
       await apiFetch(`/api/incidents/${id}/assign`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({
-          owner: "SOC-Analyst",
+          owner: 'SOC-Analyst',
         }),
       });
 
-      alert("Incident assigned");
+      alert('Incident assigned');
       loadData();
-
     } catch (err) {
-      console.error("Assign failed", err);
+      console.error('Assign failed', err);
     }
   }
 
@@ -153,57 +148,53 @@ export default function IncidentsPage() {
 
     try {
       await apiFetch(`/api/incidents/${id}/status`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ status }),
       });
 
       loadData();
-
     } catch (err) {
-      console.error("Status update failed", err);
+      console.error('Status update failed', err);
     }
   }
 
   async function blockIP(ip: string) {
     try {
-      await apiFetch("/actions/block-ip", {
-        method: "POST",
+      await apiFetch('/actions/block-ip', {
+        method: 'POST',
         body: JSON.stringify({ ip }),
       });
       loadData();
     } catch (err) {
-      console.error("Block failed", err);
+      console.error('Block failed', err);
     }
   }
 
   async function isolateHost(ip: string) {
     try {
-      await apiFetch("/actions/isolate-host", {
-        method: "POST",
+      await apiFetch('/actions/isolate-host', {
+        method: 'POST',
         body: JSON.stringify({ host: ip }),
       });
       loadData();
     } catch (err) {
-      console.error("Isolate failed", err);
+      console.error('Isolate failed', err);
     }
   }
 
   /* ================= ACCESS CONTROL ================= */
 
-  if (user.role && user.role !== "Admin") {
-    return <p style={{ padding: "20px" }}>Access denied</p>;
+  if (user.role && user.role !== 'Admin') {
+    return <p style={{ padding: '20px' }}>Access denied</p>;
   }
 
   /* ================= UI ================= */
 
   return (
-
     <div className="incidents-page max-w-[1500px] mx-auto">
-
       <h1 className="page-title">Incidents</h1>
 
       <div className="incident-stats">
-
         <div className="stat critical">
           <span>CRITICAL</span>
           <h2>{counts.CRITICAL}</h2>
@@ -223,23 +214,17 @@ export default function IncidentsPage() {
           <span>LOW</span>
           <h2>{counts.LOW}</h2>
         </div>
-
       </div>
 
       <div className="glass-card">
-
         {loading ? (
           <p className="muted">Loading incidents...</p>
         ) : incidents.length === 0 ? (
           <div className="soc-card">
-            <p className="empty-text text-center">
-              🚫 No incidents found
-            </p>
+            <p className="empty-text text-center">🚫 No incidents found</p>
           </div>
         ) : (
-
           <table className="incidents-table">
-
             <thead>
               <tr>
                 <th>IP</th>
@@ -252,35 +237,25 @@ export default function IncidentsPage() {
             </thead>
 
             <tbody>
-
               {incidents.map((i, index) => {
-
-                let ip =
-                  i.source_ip ||
-                  i.ip ||
-                  i.sourceIp ||
-                  "";
+                let ip = i.source_ip || i.ip || i.sourceIp || '';
 
                 try {
-                  if (ip.startsWith("http")) {
+                  if (ip.startsWith('http')) {
                     ip = new URL(ip).hostname;
                   }
                 } catch {}
 
                 const asset = getAsset(ip);
-                const isCritical = asset?.criticality === "CRITICAL";
+                const isCritical = asset?.criticality === 'CRITICAL';
 
                 return (
-
                   <tr
                     key={i.id || index}
                     className={
-                      isCritical
-                        ? "bg-red-900/40"
-                        : rowClass(i.severity)
+                      isCritical ? 'bg-red-900/40' : rowClass(i.severity)
                     }
                   >
-
                     <td>
                       {ip ? (
                         <>
@@ -297,18 +272,23 @@ export default function IncidentsPage() {
                             </span>
                           )}
                         </>
-                      ) : "-"}
+                      ) : (
+                        '-'
+                      )}
                     </td>
 
-                    <td className={`severity-${(i.severity || "info").toLowerCase()}`}>
-                      {i.severity || "INFO"}
+                    <td
+                      className={`severity-${(i.severity || 'info').toLowerCase()}`}
+                    >
+                      {i.severity || 'INFO'}
                     </td>
 
                     <td>
                       <select
-                        value={i.status || "OPEN"}
+                        aria-label="Incident status"
+                        value={i.status || 'OPEN'}
                         onChange={(e) => updateStatus(i.id, e.target.value)}
-                        className={`status-select ${statusColor[i.status || ""] || "text-gray-400"}`}
+                        className={`status-select ${statusColor[i.status || ''] || 'text-gray-400'}`}
                       >
                         <option value="OPEN">OPEN</option>
                         <option value="INVESTIGATING">INVESTIGATING</option>
@@ -318,18 +298,17 @@ export default function IncidentsPage() {
                       </select>
                     </td>
 
-                    <td>{i.owner || "-"}</td>
+                    <td>{i.owner || '-'}</td>
 
                     <td>
                       {i.created_at
-                        ? new Date(i.created_at).toLocaleString("en-IN", {
-                            timeZone: "Asia/Kolkata",
+                        ? new Date(i.created_at).toLocaleString('en-IN', {
+                            timeZone: 'Asia/Kolkata',
                           })
-                        : "-"}
+                        : '-'}
                     </td>
 
                     <td className="flex gap-2">
-
                       <button
                         className="assign-btn"
                         onClick={() => assignOwner(i.id)}
@@ -350,27 +329,16 @@ export default function IncidentsPage() {
                       >
                         🔌
                       </button>
-
                     </td>
-
                   </tr>
-
                 );
-
               })}
-
             </tbody>
-
           </table>
-
         )}
-
       </div>
 
       <HistoryPanel pageFilter="incidents" />
-
     </div>
-
   );
-
 }

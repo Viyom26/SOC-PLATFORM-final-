@@ -1,18 +1,35 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from fastapi import UploadFile, File
 
 from app.database import get_db
+# 🔐 FILE SECURITY SETTINGS
+ALLOWED_EXTENSIONS = (".csv", ".json", ".log", ".txt")
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+from app.database import get_db
 from app.models.threat_log import ThreatLog as Log
+# 🔐 RBAC
+from app.security import require_role
 from app.services.score import calculate_ip_score
 
 from datetime import datetime  # ✅ NEW
 
 router = APIRouter(prefix="/api/soc", tags=["SOC"])
+# 🔐 FILE VALIDATION FUNCTION
+def validate_file(file: UploadFile):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file uploaded")
 
+    if not file.filename.endswith(ALLOWED_EXTENSIONS):
+        raise HTTPException(status_code=400, detail="Invalid file type")
 
 @router.get("/ip-analysis/{ip}")
-def ip_analysis(ip: str, db: Session = Depends(get_db)):
+def ip_analysis(
+    ip: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_role("ADMIN", "ANALYST", "VIEWER"))
+):
 
     logs = db.query(Log).filter(
         or_(Log.source_ip == ip, Log.destination_ip == ip)
@@ -101,7 +118,8 @@ def ip_analysis(ip: str, db: Session = Depends(get_db)):
 def get_logs_paginated(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user=Depends(require_role("ADMIN", "ANALYST", "VIEWER"))
 ):
     offset = (page - 1) * limit
 
@@ -166,3 +184,51 @@ def get_logs_paginated(
     for l in logs
 ]
 }
+    
+# ================= FILE UPLOAD (SECURE) =================
+
+@router.post("/upload")
+async def upload_logs(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user=Depends(require_role("ADMIN", "ANALYST"))
+):
+
+    # 🔐 VALIDATE FILE TYPE
+    validate_file(file)
+
+    # 🔐 READ FILE CONTENT
+    content = await file.read()
+
+    # 🔐 CHECK FILE SIZE
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large")
+
+    # 🔐 SAFE DECODE
+    try:
+        text_data = content.decode("utf-8", errors="ignore")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file content")
+
+    # 🔐 BASIC MALICIOUS CHECK
+    if "DROP TABLE" in text_data or "<script>" in text_data:
+
+        # 🔐 SECURITY ALERT LOG
+        from app.services.audit_service import log_action
+
+        log_action(
+            db,
+            "MALICIOUS_UPLOAD",
+            "unknown",
+            details="Suspicious file content detected",
+            page="upload"
+        )
+
+        raise HTTPException(status_code=400, detail="Suspicious content detected")
+
+    # 👉 (Optional) process logs here
+
+    return {
+        "status": "File uploaded safely",
+        "size": len(content)
+    }

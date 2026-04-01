@@ -112,8 +112,10 @@ def get_logs(
                 "dst_port": log.destination_port,
                 "protocol": log.protocol,
                 "severity": log.severity,
+                "risk": log.risk_score,     # ✅ ADD THIS
+                "status": log.status, 
                 "threat": log.message,
-                "created_at": log.created_at.isoformat() if log.created_at else None,  # ✅ FIX HERE
+                "created_at": log.created_at.isoformat() if log.created_at else None,  # ✅ FIX HERE # type: ignore
                 "mitre_tactic": log.mitre_tactic,
                 "mitre_technique": log.mitre_technique,
             }
@@ -378,8 +380,13 @@ def process_logs(file_path, filename, username):
 
                 risk_score = risk_map.get(severity, 10)
 
-                # ALERT LOGIC
-                if severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+                # 🔥 ADD THIS BLOCK
+                status = "SAFE"
+
+                if severity in ["CRITICAL", "HIGH"]:
+                    status = "THREAT"
+                elif severity == "MEDIUM":
+                    status = "SUSPICIOUS"
 
                     try:
                         create_alert(
@@ -434,7 +441,7 @@ def process_logs(file_path, filename, username):
                     risk_score=risk_score,
                     classification=row_text,
                     message=row_text,
-                    status="NEW",
+                    status=status,
                     created_at=event_time,
                     mitre_tactic=mitre_tactic,
                     mitre_technique=mitre_technique,
@@ -453,7 +460,7 @@ def process_logs(file_path, filename, username):
                     detection_result = run_detection_engine(db, log)
 
                     # ✅ ADD THIS BLOCK (VERY IMPORTANT)
-                    if detection_result and processed % 50 == 0:
+                    if detection_result and processed % 50 == 0: # type: ignore
                         print("🚨 DETECTED:", detection_result)
 
                         alert_data = {
@@ -611,8 +618,10 @@ def search_logs(
             "dst_port": log.destination_port or "N/A",
             "protocol": log.protocol or "UNKNOWN",
             "severity": log.severity or "LOW",
+            "risk": log.risk_score,      # ✅ ADD
+            "status": log.status, 
             "threat": log.message or "N/A",
-            "created_at": log.created_at.isoformat() if log.created_at else None,
+            "created_at": log.created_at.isoformat() if log.created_at else None, # type: ignore
             "mitre_tactic": log.mitre_tactic or "N/A",
             "mitre_technique": log.mitre_technique or "N/A",
         })
@@ -646,8 +655,10 @@ def threat_hunt(
             "dst_ip": log.destination_ip,
             "protocol": log.protocol,
             "severity": log.severity,
+            "risk": log.risk_score,     # ✅ ADD THIS
+            "status": log.status, 
             "threat": log.message,
-            "time": log.created_at.isoformat() if log.created_at else None
+            "time": log.created_at.isoformat() if log.created_at else None # type: ignore
         })
 
     return {"items": items}

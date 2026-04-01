@@ -156,3 +156,28 @@ def get_incident_timeline(
     )
 
     return timeline
+
+    return timeline
+
+
+# =========================================
+# GET ALL INCIDENTS (WITH PAGINATION) 🔥
+# =========================================
+@router.get("/")
+def get_all_incidents(
+    page: int = 1,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
+):
+    offset = (page - 1) * limit
+
+    incidents = (
+        db.query(Incident)
+        .order_by(Incident.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return incidents

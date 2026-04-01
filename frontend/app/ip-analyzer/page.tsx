@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import "./ip-analyzer.css";
-import { useState, useEffect, useMemo } from "react";
-import { apiFetch } from "@/lib/api";
-import HistoryPanel from "@/components/HistoryPanel";
+import './ip-analyzer.css';
+import { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '@/lib/api';
+import HistoryPanel from '@/components/HistoryPanel';
 
 type IPResult = {
   ip: string;
   score: number;
-  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  risk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   reputation?: number;
   country?: string;
   city?: string;
@@ -25,18 +25,17 @@ type IPResult = {
 };
 
 export default function IPAnalyzerPage() {
-
-  const [ipInput, setIpInput] = useState("");
+  const [ipInput, setIpInput] = useState('');
   const [results, setResults] = useState<IPResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch("/auth/me").catch(() => {});
+    apiFetch('/auth/me').catch(() => {});
   }, []);
 
   function isPrivateIP(ip: string) {
-    const parts = ip.split(".");
+    const parts = ip.split('.');
     if (parts.length !== 4) return false;
 
     const first = parseInt(parts[0]);
@@ -50,23 +49,22 @@ export default function IPAnalyzerPage() {
   }
 
   function displayCountry(ip: string, country?: string) {
-    if (isPrivateIP(ip)) return "Internal Network";
-    if (!country || country === "N/A") return "Unknown";
+    if (isPrivateIP(ip)) return 'Internal Network';
+    if (!country || country === 'N/A') return 'Unknown';
     return country;
   }
 
   function displayCity(ip: string, city?: string) {
-    if (isPrivateIP(ip)) return "Internal";
-    return city || "Unknown";
+    if (isPrivateIP(ip)) return 'Internal';
+    return city || 'Unknown';
   }
 
   function displayISP(ip: string, isp?: string) {
-    if (isPrivateIP(ip)) return "Private Network";
-    return isp || "Unknown";
+    if (isPrivateIP(ip)) return 'Private Network';
+    return isp || 'Unknown';
   }
 
   async function analyzeIp() {
-
     const ips = ipInput
       .split(/[\s,]+/)
       .map((ip) => ip.trim())
@@ -75,21 +73,23 @@ export default function IPAnalyzerPage() {
     if (!ips.length) return;
 
     setLoading(true);
-    setError("");
+    setError('');
     setResults([]);
 
     try {
-
-      const data = await apiFetch("/api/ip/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const data = await apiFetch('/api/ip/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ips }),
       });
 
-      setResults(Array.isArray(data) ? data : []);
+      console.log('ANALYZE RESPONSE:', data);
 
-    } catch {
-      setError("Failed to analyze IP(s).");
+      // ✅ FIXED LINE (VERY IMPORTANT)
+      setResults(Array.isArray(data.results) ? data.results : []);
+    } catch (err) {
+      console.error('API ERROR:', err);
+      setError('Failed to analyze IP(s).');
     } finally {
       setLoading(false);
     }
@@ -100,29 +100,25 @@ export default function IPAnalyzerPage() {
   }, [results]);
 
   function riskClass(risk: string) {
-    if (risk === "CRITICAL") return "badge badge-critical";
-    if (risk === "HIGH") return "badge badge-high";
-    if (risk === "MEDIUM") return "badge badge-medium";
-    return "badge badge-low";
+    if (risk === 'CRITICAL') return 'badge badge-critical';
+    if (risk === 'HIGH') return 'badge badge-high';
+    if (risk === 'MEDIUM') return 'badge badge-medium';
+    return 'badge badge-low';
   }
 
   function riskBorder(risk: string) {
-    if (risk === "CRITICAL") return "5px solid #ef4444";
-    if (risk === "HIGH") return "5px solid #f97316";
-    if (risk === "MEDIUM") return "5px solid #f59e0b";
-    return "5px solid #22c55e";
+    if (risk === 'CRITICAL') return '5px solid #ef4444';
+    if (risk === 'HIGH') return '5px solid #f97316';
+    if (risk === 'MEDIUM') return '5px solid #f59e0b';
+    return '5px solid #22c55e';
   }
 
   return (
-
     <div className="ip-analyzer-page max-w-[1400px] mx-auto">
-
       <h1 className="page-title">🧠 IP Analyzer</h1>
 
       <div className="ip-card">
-
         <div className="ip-input-group">
-
           <textarea
             className="ip-input"
             placeholder="Enter one or multiple IPs (space or comma separated)"
@@ -131,48 +127,32 @@ export default function IPAnalyzerPage() {
             rows={3}
           />
 
-          <button
-            className="ip-btn"
-            onClick={analyzeIp}
-            disabled={loading}
-          >
-            {loading ? "Analyzing..." : "Analyze"}
+          <button className="ip-btn" onClick={analyzeIp} disabled={loading}>
+            {loading ? 'Analyzing...' : 'Analyze'}
           </button>
-
         </div>
 
         {error && <div className="error-text">{error}</div>}
 
         {sortedResults.map((result) => (
-
           <div
             key={result.ip}
             className="result-card"
             style={{ borderLeft: riskBorder(result.risk) }}
           >
-
             <div className="result-header">
-
               <h3>Threat Intelligence Report</h3>
 
               <div className="header-right">
-
-                <span className={riskClass(result.risk)}>
-                  {result.risk}
-                </span>
+                <span className={riskClass(result.risk)}>{result.risk}</span>
 
                 {result.blacklisted && (
-                  <span className="blacklisted">
-                    🚫 BLACKLISTED
-                  </span>
+                  <span className="blacklisted">🚫 BLACKLISTED</span>
                 )}
-
               </div>
-
             </div>
 
             <div className="result-grid">
-
               <div>
                 <strong>IP Address</strong>
                 <span
@@ -183,9 +163,7 @@ export default function IPAnalyzerPage() {
                 </span>
 
                 {result.tor_exit && (
-                  <div className="tor-flag">
-                    ⚠ Tor Exit Node
-                  </div>
+                  <div className="tor-flag">⚠ Tor Exit Node</div>
                 )}
               </div>
 
@@ -221,7 +199,7 @@ export default function IPAnalyzerPage() {
 
               <div>
                 <strong>ASN</strong>
-                <span>{result.asn || "Unknown"}</span>
+                <span>{result.asn || 'Unknown'}</span>
               </div>
 
               <div>
@@ -233,19 +211,12 @@ export default function IPAnalyzerPage() {
                 <strong>VT Suspicious</strong>
                 <span>{result.virustotal?.suspicious ?? 0}</span>
               </div>
-
             </div>
-
           </div>
-
         ))}
 
         <HistoryPanel pageFilter="ip-analyzer" enableRiskFilter />
-
       </div>
-
     </div>
-
   );
-
 }
