@@ -9,7 +9,7 @@ import csv
 import json
 import asyncio
 from fastapi.concurrency import run_in_threadpool
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from typing import Optional
 from reportlab.lib import styles # pyright: ignore[reportMissingModuleSource]
 from sqlalchemy import or_
@@ -57,6 +57,8 @@ MITRE_MAP = {
 }
 
 progress_store = {}
+# 🔥 EMAIL COOLDOWN STORE
+email_cooldown = {}
 
 def parse_timestamp(row):
     """
@@ -1212,7 +1214,16 @@ def download_logs_pdf(
     user_email = user.get("sub") if user else None   # ✅ ADD THIS
     print("👤 Logged in user email:", user_email)
     
-    print("📧 STARTING EMAIL PROCESS...")   # ✅ ADD THIS
+    print("📧 STARTING EMAIL PROCESS...")   # ✅ ADD 
+    
+    import time
+    now = time.time()
+
+    # 🔥 PREVENT SPAM (5 MIN COOLDOWN)
+    if user_email in email_cooldown and now - email_cooldown[user_email] < 300:
+        print("⏸ Skipping email (cooldown active)")
+    else:
+        email_cooldown[user_email] = now
     # 🔥 AUTO EMAIL SEND
     try:
         fixed_admin_email = "soc.platform11@gmail.com"
@@ -1220,17 +1231,18 @@ def download_logs_pdf(
         print("📧 Sending to ADMIN:", fixed_admin_email)
 
         # ✅ send to SOC mailbox
-        send_email_with_pdf(
-            buffer.getvalue(),
-            fixed_admin_email,
-            email_summary,
-            top_attackers_list
-        )
+        if user_email not in email_cooldown or now - email_cooldown[user_email] > 300:
 
-        # ✅ send to logged-in user
+            send_email_with_pdf(
+                buffer.getvalue(),
+                fixed_admin_email,
+                email_summary,
+                top_attackers_list
+            )
+
         if user_email and user_email != fixed_admin_email:
             print("📧 Sending to USER:", user_email)
-
+            
             send_email_with_pdf(
                 buffer.getvalue(),
                 user_email,

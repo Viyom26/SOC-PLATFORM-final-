@@ -150,7 +150,13 @@ async def stream_live_network(data: dict):
         "type": "LIVE_TRAFFIC",
         "source_ip": data.get("source_ip"),
         "destination_ip": data.get("destination_ip"),
-        "protocol": data.get("protocol"),
+        "connection_type": data.get("protocol") or "IPv4",
+        "attack_count": 1,
+        "country": "Unknown",
+        "risk_score": 10,
+        "risk_level": "LOW",
+        "confidence": 10,
+        "threat": "Live Traffic"
     })
 
     return {"status": "ok"}

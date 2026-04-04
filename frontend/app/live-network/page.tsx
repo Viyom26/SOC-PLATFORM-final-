@@ -3,10 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+function getFlag(country?: string) {
+  if (!country || country === 'Unknown') return '🌐';
+
+  const code = country.slice(0, 2).toUpperCase();
+
+  return code.replace(/./g, (c) =>
+    String.fromCodePoint(127397 + c.charCodeAt(0))
+  );
+}
 
 type NetworkEvent = {
   source_ip: string;
   destination_ip: string;
+  destinations?: string[]; // ✅ ADD THIS
   connection_type?: string;
   threat?: string;
   attack_count?: number;
@@ -15,6 +25,7 @@ type NetworkEvent = {
   risk_level?: string;
   confidence?: number;
   event_time?: string;
+  protocol?: string; // keep this
 };
 
 type Talker = {
@@ -26,8 +37,15 @@ export default function LiveNetworkPage() {
   const [events, setEvents] = useState<NetworkEvent[]>([]);
   const [talkers, setTalkers] = useState<Talker[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
 
   const router = useRouter();
+  const topSource =
+    events.length > 0
+      ? events.reduce((acc, curr) =>
+          (curr.attack_count ?? 0) > (acc.attack_count ?? 0) ? curr : acc
+        ).source_ip
+      : null;
 
   useEffect(() => {
     let mounted = true;
@@ -52,7 +70,9 @@ export default function LiveNetworkPage() {
 
     load();
 
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(() => {
+      if (!paused) load();
+    }, 10000);
 
     // 🔥 ADD WEBSOCKET BELOW
     const ws = new WebSocket(
@@ -63,7 +83,43 @@ export default function LiveNetworkPage() {
       const data = JSON.parse(event.data);
 
       if (data.type === 'LIVE_TRAFFIC') {
-        setEvents((prev) => [data, ...prev.slice(0, 100)]);
+        setEvents((prev) => {
+          const existing = prev.find(
+            (e) =>
+              e.source_ip === data.source_ip &&
+              e.destination_ip === data.destination_ip
+          );
+
+          let updated;
+
+          if (existing) {
+            // 🔥 MERGE (DO NOT OVERWRITE)
+            updated = {
+              ...existing,
+              ...data,
+
+              // ✅ PRESERVE OLD VALUES IF NEW MISSING
+              connection_type: data.connection_type ?? existing.connection_type,
+              risk_score: data.risk_score ?? existing.risk_score,
+              risk_level: data.risk_level ?? existing.risk_level,
+              confidence: data.confidence ?? existing.confidence,
+              threat: data.threat ?? existing.threat,
+              country: data.country ?? existing.country,
+            };
+          } else {
+            updated = data;
+          }
+
+          const filtered = prev.filter(
+            (e) =>
+              !(
+                e.source_ip === data.source_ip &&
+                e.destination_ip === data.destination_ip
+              )
+          );
+
+          return [updated, ...filtered].slice(0, 200);
+        });
       }
     };
 
@@ -72,7 +128,7 @@ export default function LiveNetworkPage() {
       clearInterval(interval);
       ws.close(); // 🔥 ADD THIS
     };
-  }, []);
+  }, [paused]);
 
   const riskColor = (level?: string) => {
     if (level === 'HIGH') return 'bg-orange-500';
@@ -83,6 +139,28 @@ export default function LiveNetworkPage() {
   return (
     <div className="p-6 text-white">
       <h1 className="text-2xl mb-6">Live Network Monitoring</h1>
+      <div className="flex gap-3 mb-4">
+        <button
+          onClick={() => setPaused(false)}
+          className="bg-green-600 px-3 py-1 rounded"
+        >
+          ▶ Resume
+        </button>
+
+        <button
+          onClick={() => setPaused(true)}
+          className="bg-yellow-600 px-3 py-1 rounded"
+        >
+          ⏸ Pause
+        </button>
+
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-blue-600 px-3 py-1 rounded"
+        >
+          🔄 Refresh
+        </button>
+      </div>
 
       {/* TOP TALKERS */}
 
@@ -110,7 +188,7 @@ export default function LiveNetworkPage() {
 
       {events.length > 0 && (
         <div className="bg-slate-900 border border-slate-700 rounded overflow-x-auto">
-          <div className="grid grid-cols-8 text-sm text-slate-300 border-b border-slate-700 p-3 font-semibold">
+          <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] text-sm text-slate-300 border-b border-slate-700 p-3 font-semibold">
             <div>Attack Flow</div>
             <div>Type</div>
             <div>Country</div>
@@ -127,18 +205,42 @@ export default function LiveNetworkPage() {
             return (
               <div key={key}>
                 <div
-                  className="grid grid-cols-8 items-center text-sm p-3 border-b border-slate-800 hover:bg-slate-800 cursor-pointer transition"
+                  className="grid grid-cols-[2.5fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center text-sm p-3 border-b border-slate-800 hover:bg-slate-800 cursor-pointer transition"
                   onClick={() => setExpanded(expanded === key ? null : key)}
                 >
-                  <div>
-                    <span className="text-red-400">{e.source_ip}</span>
-                    {' → '}
-                    <span className="text-blue-400">{e.destination_ip}</span>
+                  <div className="break-all leading-tight pr-2 relative">
+                    <div className="absolute left-0 top-1/2 w-full h-[1px] bg-green-500 opacity-20"></div>
+                    <span
+                      className={`block ${
+                        e.source_ip === topSource
+                          ? 'text-red-500 animate-pulse font-bold'
+                          : 'text-red-400'
+                      }`}
+                    >
+                      {e.source_ip}
+                    </span>
+                    <span className="text-green-400 text-xs animate-pulse">
+                      →
+                    </span>
+                    <span className="text-blue-400 block">
+                      {e.destination_ip}
+                    </span>
+
+                    {e.destinations && e.destinations.length > 5 && (
+                      <span className="absolute right-0 top-0 text-[10px] bg-red-600 px-2 py-[2px] rounded animate-pulse">
+                        SCAN
+                      </span>
+                    )}
                   </div>
 
-                  <div>{e.connection_type ?? '-'}</div>
+                  <div className="whitespace-nowrap text-center">
+                    {e.connection_type ?? '-'}
+                  </div>
 
-                  <div>{e.country ?? 'Unknown'}</div>
+                  <div className="flex items-center gap-1">
+                    <span>{getFlag(e.country)}</span>
+                    <span>{e.country ?? 'Unknown'}</span>
+                  </div>
 
                   <div>{e.attack_count ?? 0}</div>
 
@@ -171,6 +273,17 @@ export default function LiveNetworkPage() {
                     <div className="font-semibold mb-3">
                       Attack Count: {e.attack_count ?? 0}
                     </div>
+
+                    {e.destinations && (
+                      <div className="mt-2 text-xs text-slate-300">
+                        <div className="mb-1 font-semibold">Destinations:</div>
+                        {e.destinations.map((d: string, idx: number) => (
+                          <div key={idx} className="text-blue-400">
+                            {d}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="flex gap-3">
                       <button

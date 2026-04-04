@@ -92,8 +92,7 @@ export default function LogsPage() {
       a.download = 'logs.pdf';
       a.click();
 
-      alert('📧 Report sent to your email!');
-      toast.success('📧 Report sent!');
+      toast.success('📧 Report generated & email sent!');
     } catch (err) {
       console.error('Download failed:', err);
     } finally {
