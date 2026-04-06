@@ -358,7 +358,12 @@ export default function LogsPage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                   },
-                  body: JSON.stringify({ logs, filter }),
+                  body: JSON.stringify({
+                    logs,
+                    filter,
+                    from: fromDate,
+                    to: toDate,
+                  }),
                 }
               );
 
@@ -413,73 +418,139 @@ export default function LogsPage() {
 
       {/* 🔥 SEARCH BAR ADDED HERE */}
 
-      <div className="search-bar">
-        <label
-          htmlFor="fromDate"
-          style={{ fontSize: '12px', color: '#94a3b8' }}
-        >
-          From:
-        </label>
-        <input
-          id="fromDate"
-          name="fromDate"
-          type="datetime-local"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
+      {/* 🔥 PROFESSIONAL FILTER BAR */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          alignItems: 'center',
+          background: '#0f172a',
+          padding: '12px',
+          borderRadius: '10px',
+          border: '1px solid #1e293b',
+          marginBottom: '15px',
+        }}
+      >
+        {/* FROM DATE */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <label
+            htmlFor="fromDate"
+            style={{ fontSize: '11px', color: '#94a3b8' }}
+          >
+            From
+          </label>
+          <input
+            id="fromDate"
+            name="fromDate"
+            type="datetime-local"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            style={{
+              padding: '6px',
+              background: '#020617',
+              border: '1px solid #334155',
+              color: 'white',
+              borderRadius: '6px',
+            }}
+          />
+        </div>
 
-        <label htmlFor="toDate" style={{ fontSize: '12px', color: '#94a3b8' }}>
-          To:
-        </label>
-        <input
-          id="toDate"
-          name="toDate"
-          type="datetime-local"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
-        {/* 🔥 DATE FILTERS */}
-        <div style={{ marginBottom: '10px', display: 'flex', gap: '10px' }}>
+        {/* TO DATE */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <label
+            htmlFor="toDate"
+            style={{ fontSize: '11px', color: '#94a3b8' }}
+          >
+            To
+          </label>
+          <input
+            id="toDate"
+            name="toDate"
+            type="datetime-local"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            style={{
+              padding: '6px',
+              background: '#020617',
+              border: '1px solid #334155',
+              color: 'white',
+              borderRadius: '6px',
+            }}
+          />
+        </div>
+
+        {/* FILTER DROPDOWN */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <label
             htmlFor="filterLogs"
-            style={{ color: '#94a3b8', fontSize: '12px' }}
+            style={{ fontSize: '11px', color: '#94a3b8' }}
           >
-            Filter Logs:
+            Filter
           </label>
-
           <select
             id="filterLogs"
             name="filterLogs"
             value={filter}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            onChange={(e) =>
               setFilter(
                 e.target.value as '1h' | '6h' | '24h' | '7d' | '30d' | 'all'
               )
             }
-            style={{ padding: '6px' }}
+            style={{
+              padding: '6px',
+              background: '#020617',
+              border: '1px solid #334155',
+              color: 'white',
+              borderRadius: '6px',
+            }}
           >
-            <option value="1h">Last 1 Hour</option>
-            <option value="6h">Last 6 Hours</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="all">All Time</option>
+            <option value="1h">1 Hour</option>
+            <option value="6h">6 Hours</option>
+            <option value="24h">24 Hours</option>
+            <option value="7d">7 Days</option>
+            <option value="30d">30 Days</option>
+            <option value="all">All</option>
           </select>
         </div>
-        <label style={{ fontSize: '12px', color: '#94a3b8' }}>Search:</label>
-        <input
-          type="text"
-          placeholder="Search by IP or message..."
-          aria-label="Search logs"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') searchLogs();
-          }}
-          style={{ padding: '8px', width: '250px', marginRight: '10px' }}
-        />
 
-        <button onClick={searchLogs}>Search</button>
+        {/* SEARCH */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <label style={{ fontSize: '11px', color: '#94a3b8' }}>Search</label>
+          <input
+            id="searchLogs"
+            name="searchLogs"
+            type="text"
+            placeholder="Search IP / Threat..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') searchLogs();
+            }}
+            style={{
+              padding: '6px',
+              background: '#020617',
+              border: '1px solid #334155',
+              color: 'white',
+              borderRadius: '6px',
+            }}
+          />
+        </div>
+
+        {/* BUTTON */}
+        <button
+          onClick={searchLogs}
+          style={{
+            background: '#22c55e',
+            color: 'black',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            alignSelf: 'flex-end',
+          }}
+        >
+          Search
+        </button>
       </div>
 
       <Card title="Parsed Output">

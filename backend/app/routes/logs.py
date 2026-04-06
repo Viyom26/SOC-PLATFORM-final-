@@ -1,7 +1,7 @@
 from email.mime import message
 from gettext import find
 from logging import critical, log
-from unittest import result
+
 import uuid
 import re
 import os
@@ -35,7 +35,6 @@ from app.services.automation_engine import auto_response
 from app.models import alert
 from fastapi import Body
 
-from app.routes import incidents
 
 router = APIRouter(prefix="/logs", tags=["Logs"])
 
@@ -700,7 +699,7 @@ from reportlab.platypus import Flowable, SimpleDocTemplate, Table, TableStyle, P
 from reportlab.lib import colors # type: ignore
 from reportlab.lib.styles import getSampleStyleSheet # pyright: ignore[reportMissingModuleSource]
 from reportlab.graphics.shapes import Drawing # pyright: ignore[reportMissingModuleSource]
-from reportlab.graphics.charts.barcharts import VerticalBarChart # pyright: ignore[reportMissingModuleSource]
+from reportlab.graphics.charts.barcharts import BarChart, VerticalBarChart # pyright: ignore[reportMissingModuleSource]
 import io
 import smtplib
 from email.message import EmailMessage
@@ -1285,7 +1284,8 @@ def download_logs_pdf(
                 fixed_admin_email,
                 email_summary,
                 top_attackers_list,
-                filter
+                filter,
+                logs
             )
 
         # 🔥 SEND ONLY ONCE (CLEAN FIX)
@@ -1300,7 +1300,8 @@ def download_logs_pdf(
                 email,
                 email_summary,
                 top_attackers_list,
-                filter
+                filter,
+                logs
             )
         else:
             print("⚠️ No valid user email found")
@@ -1317,8 +1318,9 @@ def download_logs_pdf(
     )
     
     # ================= EMAIL FUNCTION =================
-def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=None, filter="24h"):
-
+# 🔽 ABOVE (keep this line)
+def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=None, filter="24h", logs=None):
+# 🔽 BELOW (next lines already exist)
     critical = summary.get("CRITICAL", 0) if summary else 0
     high = summary.get("HIGH", 0) if summary else 0
     medium = summary.get("MEDIUM", 0) if summary else 0
@@ -1409,13 +1411,121 @@ def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=
         excel_buffer = io.BytesIO()
         wb = Workbook()
         ws = wb.active
+        ws.title = "SOC Logs"
+        summary_ws = wb.create_sheet(title="Summary")
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
 
-        ws.append(["Summary"])
-        ws.append(["Critical", summary.get("CRITICAL", 0)])
-        ws.append(["High", summary.get("HIGH", 0)])
-        ws.append(["Medium", summary.get("MEDIUM", 0)])
-        ws.append(["Low", summary.get("LOW", 0)])
+        # 🔥 HEADER (MATCH UI)
+        ws.append([
+            "Source IP",
+            "Destination IP",
+            "Source Port",
+            "Destination Port",
+            "Protocol",
+            "Severity",
+            "Risk",
+            "Threat",
+            "MITRE",
+            "Status",
+            "Event Time"
+        ])
+        
+        # 🔥 HEADER STYLING
+        for col in range(1, 12):
+            cell = ws.cell(row=1, column=col)
+            cell.font =Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
 
+        # 🔥 DATA
+        # 🔥 SAFE FIX (NO RED LINE ERROR)
+        actual_logs = []
+
+        if isinstance(logs, dict):
+            actual_logs = logs.get("items", [])
+        elif isinstance(logs, list):
+            actual_logs = logs
+        else:
+            actual_logs = []
+        # 🔥 SUMMARY CALCULATION
+        from collections import Counter
+
+        severity_counts = Counter(
+            (log.get("severity") or "LOW").upper()
+            for log in actual_logs
+        )
+
+        summary_ws.append(["Metric", "Value"])
+        summary_ws.append(["Total Logs", len(actual_logs)])
+        summary_ws.append(["CRITICAL", severity_counts.get("CRITICAL", 0)])
+        summary_ws.append(["HIGH", severity_counts.get("HIGH", 0)])
+        summary_ws.append(["MEDIUM", severity_counts.get("MEDIUM", 0)])
+        summary_ws.append(["LOW", severity_counts.get("LOW", 0)])
+
+        # 🔥 EXCEL CHART (PASTE HERE)
+        from openpyxl.chart import BarChart, Reference
+
+        chart = BarChart()
+        chart.title = "Threat Severity Distribution"
+
+        data = Reference(summary_ws, min_col=2, min_row=2, max_row=5)
+        categories = Reference(summary_ws, min_col=1, min_row=3, max_row=6)
+
+        chart.add_data(data, titles_from_data=True)
+        chart.set_categories(categories)
+
+        summary_ws.add_chart(chart, "E2")
+
+        # 🔥 AUTO WIDTH
+        from openpyxl.utils import get_column_letter
+
+        for col in summary_ws.columns:
+            max_length = 0
+            col_letter = get_column_letter(col[0].column)
+
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+
+            summary_ws.column_dimensions[col_letter].width = max_length + 2
+
+        if actual_logs:
+            row_num = 2  # start after header
+
+            for log in actual_logs:
+                ws.append([
+                log.get("src_ip", "N/A"),
+                log.get("dst_ip", "N/A"),
+                log.get("src_port", "N/A"),
+                log.get("dst_port", "N/A"),
+                log.get("protocol", "N/A"),
+                log.get("severity", "LOW"),
+                log.get("risk_score", 0),
+                log.get("threat", "N/A"),
+                f"{log.get('mitre_tactic','')} / {log.get('mitre_technique','')}",
+                log.get("status", "SAFE"),
+                log.get("created_at", "N/A"),
+                ])
+
+                # 🔥 ROW COLOR BASED ON SEVERITY
+                severity = (log.get("severity") or "").upper()
+
+                if severity == "CRITICAL":
+                    fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+                elif severity == "HIGH":
+                    fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")
+                elif severity == "MEDIUM":
+                    fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+                else:
+                    fill = PatternFill(start_color="00FF00", end_color="00FF00", fill_type="solid")
+
+                for col in range(1, 12):
+                    ws.cell(row=row_num, column=col).fill = fill
+
+                row_num += 1
+
+    # 🔽 BELOW (KEEP SAME)
         wb.save(excel_buffer)
         excel_buffer.seek(0)
 
@@ -1423,9 +1533,8 @@ def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=
             excel_buffer.getvalue(),
             maintype="application",
             subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename="SOC_Summary.xlsx"
+            filename="SOC_Report.xlsx"
         )
-
 
     except Exception as e:
         print("Excel attach failed:", e)
@@ -1493,6 +1602,8 @@ def download_logs_excel(
     wb = Workbook()
     ws = wb.active
     ws.title = "SOC Logs"
+    
+    
 
     # HEADER
     ws.append([
