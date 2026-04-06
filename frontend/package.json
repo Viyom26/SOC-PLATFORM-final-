@@ -28,7 +28,7 @@
     "react-globe.gl": "^2.37.0",
     "react-hot-toast": "^2.6.0",
     "react-simple-maps": "^3.0.0",
-    "recharts": "^3.8.0",
+    "recharts": "^3.8.1",
     "supercluster": "^8.0.1",
     "three": "^0.182.0",
     "world-atlas": "^2.0.2",

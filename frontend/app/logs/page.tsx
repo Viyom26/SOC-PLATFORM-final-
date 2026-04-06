@@ -54,12 +54,21 @@ export default function LogsPage() {
   const [progress, setProgress] = useState(0);
   const [totalLogs, setTotalLogs] = useState(0);
   const [total, setTotal] = useState(0); // 🔥 ADD
+  const [filter, setFilter] = useState<
+    '1h' | '6h' | '24h' | '7d' | '30d' | 'all'
+  >('24h');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const tableRef = useRef<HTMLDivElement>(null);
 
   const limit = 100; // 🔥 SAME AS API
   const totalPages = Math.ceil(total / limit);
 
   const downloadPDF = async () => {
+    console.log('Sending logs:', logs.length);
+    console.log('Selected filter:', filter);
+    console.log('🚀 Logs sent to backend:', logs);
+    console.log('🚀 Logs count:', logs.length);
     try {
       setPdfLoading(true); // 🔥 START LOADING
 
@@ -71,6 +80,9 @@ export default function LogsPage() {
         },
         body: JSON.stringify({
           logs: logs,
+          filter: filter,
+          from: fromDate,
+          to: toDate,
           company: 'AegisCyber SOC',
           analyst: 'DEVELOPER',
 
@@ -334,6 +346,34 @@ export default function LogsPage() {
           >
             {pdfLoading ? 'Generating PDF...' : 'Download Logs PDF'}
           </button>
+
+          {/* 🔥 ADD THIS EXACTLY HERE */}
+          <button
+            onClick={async () => {
+              const res = await fetch(
+                'http://localhost:8000/logs/download-excel',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                  },
+                  body: JSON.stringify({ logs, filter }),
+                }
+              );
+
+              const blob = await res.blob();
+              const url = window.URL.createObjectURL(blob);
+
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'logs.xlsx';
+              a.click();
+            }}
+            className="primary-btn"
+          >
+            Download Excel
+          </button>
         </div>
 
         {
@@ -374,9 +414,63 @@ export default function LogsPage() {
       {/* 🔥 SEARCH BAR ADDED HERE */}
 
       <div className="search-bar">
+        <label
+          htmlFor="fromDate"
+          style={{ fontSize: '12px', color: '#94a3b8' }}
+        >
+          From:
+        </label>
+        <input
+          id="fromDate"
+          name="fromDate"
+          type="datetime-local"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+        />
+
+        <label htmlFor="toDate" style={{ fontSize: '12px', color: '#94a3b8' }}>
+          To:
+        </label>
+        <input
+          id="toDate"
+          name="toDate"
+          type="datetime-local"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+        />
+        {/* 🔥 DATE FILTERS */}
+        <div style={{ marginBottom: '10px', display: 'flex', gap: '10px' }}>
+          <label
+            htmlFor="filterLogs"
+            style={{ color: '#94a3b8', fontSize: '12px' }}
+          >
+            Filter Logs:
+          </label>
+
+          <select
+            id="filterLogs"
+            name="filterLogs"
+            value={filter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setFilter(
+                e.target.value as '1h' | '6h' | '24h' | '7d' | '30d' | 'all'
+              )
+            }
+            style={{ padding: '6px' }}
+          >
+            <option value="1h">Last 1 Hour</option>
+            <option value="6h">Last 6 Hours</option>
+            <option value="24h">Last 24 Hours</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <label style={{ fontSize: '12px', color: '#94a3b8' }}>Search:</label>
         <input
           type="text"
           placeholder="Search by IP or message..."
+          aria-label="Search logs"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => {
