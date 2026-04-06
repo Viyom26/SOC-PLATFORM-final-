@@ -1,44 +1,64 @@
-# SOC Platform
+# 🚀 SOC Platform (Security Operations Center)
 
-A Security Operations Center (SOC) monitoring platform for detecting, analyzing, and visualizing cybersecurity threats in real time.
+A modern **Security Operations Center (SOC) monitoring platform** for detecting, analyzing, and visualizing cybersecurity threats in real time.
 
-This project provides tools for **log analysis, threat intelligence enrichment, network monitoring, and security event visualization** through an interactive security dashboard.
-
-The goal of the platform is to simulate capabilities found in real **SIEM (Security Information and Event Management)** systems used by security teams.
+Built to simulate real-world **SIEM (Security Information and Event Management)** systems used in enterprise environments.
 
 ---
 
-# Table of Contents
+## 📦 One-Click Download
 
-* Features
-* Dashboard Preview
-* Architecture
-* Modules
-* Installation
-* Project Structure
-* Future Improvements
-* Author
+👉 Download Full Project (ZIP):
+https://github.com/Viyom26/SOC-PLATFORM-final-/archive/refs/heads/main.zip
 
 ---
 
-# Features
+## ⚡ One-Click Run (Docker - Recommended)
 
-### Core Security Monitoring
+```bash
+docker-compose up --build
+```
 
-* Log Parsing and Security Event Ingestion
+Then open:
+
+* 🌐 Frontend → http://localhost:3000
+* ⚙️ Backend API → http://localhost:8000/docs
+
+---
+
+## 🧠 Key Highlights
+
+* Real-time threat detection & monitoring
+* AI-style risk scoring engine
+* MITRE ATT&CK mapping
+* Live attack visualization dashboard
+* Threat intelligence enrichment
+* Industry-style SOC workflow simulation
+
+---
+
+# 📊 Features
+
+## 🔐 Core Security Monitoring
+
+* Log Parsing & Security Event Ingestion
 * Threat Intelligence Enrichment
 * Live Network Monitoring
 * Attack Surface Monitoring
 * Risk Scoring Engine
 
-### Detection & Analysis
+---
+
+## 🧠 Detection & Analysis
 
 * MITRE ATT&CK Mapping
 * Security Event Correlation
 * Incident Investigation Panel
 * IP Reputation Analysis
 
-### Visualization
+---
+
+## 📈 Visualization
 
 * SOC Security Dashboard
 * Live Attack Stream
@@ -46,7 +66,9 @@ The goal of the platform is to simulate capabilities found in real **SIEM (Secur
 * Severity Distribution Charts
 * Alert Trend Analysis
 
-### Real-Time Capabilities
+---
+
+## ⚡ Real-Time Capabilities
 
 * WebSocket-based Live Alerts
 * Continuous Log Monitoring
@@ -54,7 +76,7 @@ The goal of the platform is to simulate capabilities found in real **SIEM (Secur
 
 ---
 
-# Dashboard Preview
+# 🖥️ Dashboard Preview
 
 ### Main SOC Dashboard
 
@@ -74,14 +96,14 @@ The goal of the platform is to simulate capabilities found in real **SIEM (Secur
 
 ---
 
-# Architecture
+# 🏗️ Architecture
 
 ## Frontend
 
 * Next.js
 * TypeScript
 * TailwindCSS
-* Recharts (Security analytics visualization)
+* Recharts
 
 ## Backend
 
@@ -90,111 +112,94 @@ The goal of the platform is to simulate capabilities found in real **SIEM (Secur
 * SQLAlchemy
 * GeoIP Intelligence
 
----
+## Infrastructure
 
-# Modules
-
-## Log Parser
-
-Uploads and parses security logs such as:
-
-* Firewall logs
-* IDS / IPS logs
-* Network activity logs
-* Security alerts
-
-These logs are normalized into structured events for analysis.
+* Docker
+* PostgreSQL
 
 ---
 
-## Threat Intelligence
+# 🧩 Modules
 
-Enriches log data with:
+## 📂 Log Parser
+
+* Supports CSV, JSON, TXT, XLSX logs
+* Auto-detection of:
+
+  * IPs
+  * Ports
+  * Protocols
+  * Threat patterns
+
+---
+
+## 🌐 Threat Intelligence
 
 * IP reputation scoring
-* Geolocation intelligence
-* Threat context information
-
-This helps analysts understand whether an IP address is potentially malicious.
+* Geolocation tracking
+* Threat classification
 
 ---
 
-## Live Network Monitoring
+## 📡 Live Network Monitoring
 
-Displays active network connections and traffic behavior from monitored infrastructure.
-
-Security teams can observe:
-
-* Source and destination connections
-* Active communication patterns
-* Suspicious activity
+* Real-time connection tracking
+* Source → Destination mapping
+* Suspicious behavior detection
 
 ---
 
-## MITRE ATT&CK Mapping
+## 🎯 MITRE ATT&CK Mapping
 
-Maps detected behavior patterns to **MITRE ATT&CK techniques**, allowing analysts to understand attacker tactics and techniques.
+* Maps logs to:
 
----
-
-## Risk Engine
-
-Calculates risk scores using factors such as:
-
-* Event severity
-* Event frequency
-* Threat intelligence results
-* Behavioral indicators
+  * Tactics
+  * Techniques
 
 ---
 
-## Incident Investigation Panel
+## ⚠️ Risk Engine
 
-Allows analysts to click an attacker IP and view:
+* Calculates risk using:
 
-* Full attack timeline
-* Target systems
-* Severity history
-* MITRE techniques involved
-
-This simulates real **SOC analyst investigation workflows**.
+  * Severity
+  * Frequency
+  * Behavior
+  * Threat intelligence
 
 ---
 
-# Installation
+## 🔍 Incident Investigation Panel
 
-## Clone the Repository
+* Click IP → Full investigation
+* Timeline view
+* Attack patterns
+* MITRE mapping
+
+---
+
+# ⚙️ Manual Installation (Optional)
+
+## Clone Repo
 
 ```bash
-git clone https://github.com/Viyom26/soc-platform.git
-cd soc-platform
+git clone https://github.com/Viyom26/SOC-PLATFORM-final-.git
+cd SOC-PLATFORM-final-
 ```
 
 ---
 
-# Backend Setup
+## Backend Setup
 
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-Backend API will run on:
-
-```
-http://localhost:8000
-```
-
-API Documentation:
-
-```
-http://localhost:8000/docs
+uvicorn app.main:app --reload
 ```
 
 ---
 
-# Frontend Setup
+## Frontend Setup
 
 ```bash
 cd frontend
@@ -202,18 +207,12 @@ npm install
 npm run dev
 ```
 
-Frontend dashboard will run on:
-
-```
-http://localhost:3000
-```
-
 ---
 
-# Project Structure
+# 📁 Project Structure
 
 ```
-soc-platform
+SOC-PLATFORM
 │
 ├── backend
 │   ├── routes
@@ -228,30 +227,44 @@ soc-platform
 │   ├── styles
 │   └── lib
 │
-├── screenshots
-│
+├── docker-compose.yml
 └── README.md
 ```
 
 ---
 
-# Future Improvements
+# 🚀 Future Improvements
 
-Possible future enhancements:
-
-* Machine learning based attack detection
+* Machine learning based threat detection
 * Network packet inspection
-* Automated threat correlation
-* SOC automation workflows
-* Integration with external threat intelligence feeds
+* Automated SOC workflows
+* External threat intelligence APIs
+* Cloud deployment (AWS / Azure)
 
 ---
 
-# Author
+# 👨‍💻 Author
 
 **Viyom Jagtap**
+Cybersecurity & Software Developer
 
-Cybersecurity & Software Development Enthusiast
+🔗 GitHub: https://github.com/Viyom26
 
-GitHub:
-https://github.com/Viyom26
+---
+
+# ⭐ Final Notes
+
+This project demonstrates:
+
+✔ Real-world SOC architecture
+✔ SIEM-like capabilities
+✔ Scalable backend + modern frontend
+✔ Industry deployment readiness
+
+---
+
+🔥 Ready for:
+
+* Industry demo
+* Internship interviews
+* Production-level enhancements
