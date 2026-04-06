@@ -56,3 +56,10 @@ build/
 # =========================
 .DS_Store
 Thumbs.db
+
+# Database
+*.db
+
+# GeoIP exact file
+backend/GeoLite2-City.mmdb
+*.mmdb
