@@ -33,16 +33,17 @@ body.dark {
   justify-content: space-between;
   align-items: center;
   padding: 18px 30px;
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 body.light .topbar {
-  background: rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 body.dark .topbar {
-  background: rgba(15,20,35,0.8);
+  background: rgba(15, 20, 35, 0.8);
 }
 
 .logo {
@@ -76,17 +77,18 @@ body.dark .navlinks a {
   justify-content: space-between;
   align-items: center;
   padding: 18px 40px;
-  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
 }
 
 body.light .topbar {
-  background: rgba(255,255,255,0.85);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 body.dark .topbar {
-  background: rgba(15,23,42,0.85);
-  box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+  background: rgba(15, 23, 42, 0.85);
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
 }
 
 .logo {
@@ -130,7 +132,7 @@ body.light .navlinks a {
 
 /* Light mode logo */
 body.light .logo {
-  color: #0f172a;   /* dark navy */
+  color: #0f172a; /* dark navy */
 }
 
 /* Dark mode logo */
@@ -152,19 +154,20 @@ body.dark .navlinks a {
   justify-content: space-between;
   align-items: center;
   padding: 18px 40px;
-  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
   position: sticky;
   top: 0;
   z-index: 1000;
 }
 
 body.light .topbar {
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid #e5e7eb;
 }
 
 body.dark .topbar {
-  background: rgba(15,23,42,0.85);
+  background: rgba(15, 23, 42, 0.85);
   border-bottom: 1px solid #1f2937;
 }
 
@@ -175,6 +178,7 @@ body.dark .topbar {
   justify-content: space-between;
   align-items: center;
   padding: 18px 40px;
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
@@ -182,13 +186,13 @@ body.dark .topbar {
 }
 
 body.dark .topbar.enterprise {
-  background: rgba(10,15,25,0.8);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(10, 15, 25, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 body.light .topbar.enterprise {
-  background: rgba(255,255,255,0.8);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .logo span {
@@ -273,8 +277,8 @@ body.dark .result-card,
 body.dark .chart-card,
 body.dark .map-card {
   background: #111827;
-  border: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* HEADINGS */
@@ -364,7 +368,7 @@ body.dark h1 {
   /* WebKit fallback */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  
+
   /* Standard property first */
   background-clip: text;
 }
@@ -389,8 +393,8 @@ body.dark .result-card,
 body.dark .chart-card,
 body.dark .map-card {
   background: #111827;
-  border: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* Headings */
@@ -415,8 +419,8 @@ body.dark textarea::placeholder {
 
 /* Timeline */
 body.dark .timeline-item {
-  background: rgba(30,41,59,0.8);
-  border: 1px solid rgba(59,130,246,0.2);
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 body.dark .ip-address {
@@ -459,8 +463,8 @@ body.dark .incidents-container,
 body.dark .parser-container,
 body.dark .history-container {
   background: #111827 !important;
-  border: 1px solid rgba(59,130,246,0.08);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(59, 130, 246, 0.08);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
 }
 
 /* Dark mode table fix */
@@ -512,9 +516,10 @@ body.dark .table-wrapper {
 /* Glass container effect */
 body.dark .glass-card {
   background: rgba(17, 24, 39, 0.65);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
   border-radius: 16px;
 }
 
@@ -531,7 +536,7 @@ body.dark h1 {
   /* WebKit fallback */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  
+
   /* Standard property first */
   background-clip: text;
 }
@@ -541,17 +546,24 @@ body.dark .glass-card:hover,
 body.dark .ip-card:hover,
 body.dark .chart-card:hover,
 body.dark .map-card:hover {
-  box-shadow: 0 0 25px rgba(59,130,246,0.25),
-              0 0 60px rgba(59,130,246,0.15);
+  box-shadow:
+    0 0 25px rgba(59, 130, 246, 0.25),
+    0 0 60px rgba(59, 130, 246, 0.15);
   transform: translateY(-2px);
   transition: 0.3s ease;
 }
 
 /* Animated Border */
 @keyframes borderPulse {
-  0% { box-shadow: 0 0 0 rgba(59,130,246,0.4); }
-  50% { box-shadow: 0 0 25px rgba(59,130,246,0.6); }
-  100% { box-shadow: 0 0 0 rgba(59,130,246,0.4); }
+  0% {
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0.4);
+  }
 }
 
 body.dark .glass-card {
@@ -564,9 +576,15 @@ body.dark .glass-card {
 }
 
 @keyframes pulseCritical {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .badge-high {
@@ -575,9 +593,15 @@ body.dark .glass-card {
 }
 
 @keyframes pulseHigh {
-  0% { box-shadow: 0 0 5px rgba(249,115,22,0.5); }
-  50% { box-shadow: 0 0 20px rgba(249,115,22,0.9); }
-  100% { box-shadow: 0 0 5px rgba(249,115,22,0.5); }
+  0% {
+    box-shadow: 0 0 5px rgba(249, 115, 22, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(249, 115, 22, 0.5);
+  }
 }
 
 .live-counter {
@@ -585,8 +609,12 @@ body.dark .glass-card {
 }
 
 @keyframes counterGlow {
-  from { text-shadow: 0 0 5px #ef4444; }
-  to   { text-shadow: 0 0 20px #ef4444; }
+  from {
+    text-shadow: 0 0 5px #ef4444;
+  }
+  to {
+    text-shadow: 0 0 20px #ef4444;
+  }
 }
 
 .alert-ticker {
@@ -600,15 +628,28 @@ body.dark .glass-card {
 }
 
 @keyframes tickerMove {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(-100%); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 /* REAL-TIME MAP MARKER PULSE */
 @keyframes pulseCritical {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.8; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
 }
 
 .leaflet-interactive {
@@ -617,9 +658,18 @@ body.dark .glass-card {
 
 /* 🚀 Pulsing Threat Marker */
 @keyframes pulseMarker {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.4); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.8; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
 }
 
 .pulse-marker {
@@ -632,9 +682,15 @@ body.dark .glass-card {
 }
 
 @keyframes lineGlow {
-  0% { opacity: 0.3; }
-  50% { opacity: 0.9; }
-  100% { opacity: 0.3; }
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.3;
+  }
 }
 
 /* ================= RISK FILTER ================= */
@@ -657,12 +713,12 @@ body.dark .glass-card {
 
 .timeline-high {
   border-left: 4px solid #ef4444;
-  box-shadow: 0 0 12px rgba(239,68,68,0.4);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
 }
 
 .timeline-medium {
   border-left: 4px solid #f97316;
-  box-shadow: 0 0 12px rgba(249,115,22,0.3);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
 }
 
 .timeline-low {

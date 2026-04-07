@@ -4,12 +4,12 @@ from fastapi import FastAPI, HTTPException, Depends
 # 🔐 SECURITY HEADERS
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.routes import live_network
 # 🔐 RATE LIMITING (ADD THIS)
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.errors import RateLimitExceeded
+#from slowapi import Limiter
+#from slowapi.util import get_remote_address
+#from slowapi.middleware import SlowAPIMiddleware
+#from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -25,7 +25,7 @@ from app.models.audit_log import AuditLog
 from app.models.threat_log import ThreatLog
 from app.database import SessionLocal
 from app.routes import ip_intelligence
-
+from app.routes import logs_ai
 from app.routes import rules
 from app.routes import mitre
 from app.routes import attack_timeline
@@ -34,7 +34,7 @@ from app.routes import log_sources
 from app.routes import compliance
 from app.routes import attack_stream
 from app.routes import threat_intel
-from app.routes import live_network
+
 from app.routes.actions import router as actions_router
 from app.routes import hunting
 from app.routes import ws
@@ -98,17 +98,17 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 # 🔐 RATE LIMITER SETUP
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
+#limiter = Limiter(key_func=get_remote_address)
+#app.state.limiter = limiter
+#app.add_middleware(SlowAPIMiddleware)
 
 # 🔐 HANDLE RATE LIMIT ERROR
-@app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    return JSONResponse(
-        status_code=429,
-        content={"detail": "Too many requests. Slow down."}
-    )
+#@app.exception_handler(RateLimitExceeded)
+#async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    #return JSONResponse(
+        #status_code=429,
+        #content={"detail": "Too many requests. Slow down."}
+    #)
 
 # ================= STARTUP EVENT (IMPROVED) =================
 
@@ -178,10 +178,7 @@ def create_default_admin():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],  # 🔥 TEMP FIX
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -199,7 +196,7 @@ app.include_router(audit.router)
 app.include_router(soc.router)
 # ✅ WebSocket (your main one)
 app.include_router(ws.router)
-app.include_router(live_network.router)
+
 # ⚠️ Keep only if needed (avoid duplication conflicts)
 app.include_router(geo_ws_router)
 
@@ -209,7 +206,7 @@ app.include_router(threat_intel_router)
 
 # ⚠️ If this also uses "/ws", it can conflict — keep if different path
 
-
+app.include_router(live_network.router)
 app.include_router(ip_combined_router)
 app.include_router(country_summary_router)
 app.include_router(ai_prediction_router)
@@ -219,7 +216,7 @@ app.include_router(alerts.router)
 app.include_router(ip_intelligence.router)
 
 app.include_router(rules.router)
-
+app.include_router(logs_ai.router, prefix="/api")
 app.include_router(attack_timeline.router)
 app.include_router(comments.router)
 app.include_router(log_sources.router)
@@ -231,7 +228,7 @@ app.include_router(assets.router)
 app.include_router(attack_stream.router)
 
 app.include_router(threat_intel.router, prefix="/api")
-app.include_router(live_network.router, prefix="/api")
+
 
 app.include_router(hunting.router, prefix="/logs")
 app.include_router(actions.router)
@@ -247,7 +244,7 @@ class RegisterSchema(BaseModel):
 
 
 @app.post("/auth/register")
-@limiter.limit("5/minute")  # 🔐 PROTECT REGISTER
+  # 🔐 PROTECT REGISTER
 def register(request: Request, data: RegisterSchema, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already exists")
@@ -269,7 +266,7 @@ def register(request: Request, data: RegisterSchema, db: Session = Depends(get_d
 
 
 @app.post("/auth/login")
-@limiter.limit("5/minute")  # 🔐 PROTECT LOGIN
+  # 🔐 PROTECT LOGIN
 def login(
     request: Request, 
     form: OAuth2PasswordRequestForm = Depends(),
@@ -316,7 +313,7 @@ def me(user=Depends(get_current_user)):
 # ================= LOGS =================
 
 @app.get("/logs")
-@limiter.limit("20/minute")
+
 async def get_logs(
     request: Request,
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),
@@ -353,7 +350,7 @@ async def get_logs(
 # ================= INCIDENTS =================
 
 @app.get("/incidents")
-@limiter.limit("20/minute")
+
 async def get_incidents(
     request: Request,
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER")),

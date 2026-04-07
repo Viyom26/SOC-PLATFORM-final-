@@ -1560,6 +1560,45 @@ def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=
     except Exception as e:
         print("❌ Email failed for", recipient_email, ":", e)
 
+# ================= AI THREAT EXPLAIN =================
+
+@router.post("/ai-explain")
+def ai_explain(log: dict):
+    text = (log.get("threat") or log.get("message") or "").lower()
+
+    # 🔥 BASIC AI LOGIC (can upgrade later to OpenAI)
+    if "brute" in text or "login failed" in text:
+        return {
+            "type": "Brute Force Attack",
+            "risk": "HIGH",
+            "explanation": "Multiple failed login attempts detected. This indicates a brute-force attack targeting authentication systems.",
+            "action": "Block IP and enable rate limiting."
+        }
+
+    elif "scan" in text or "probe" in text:
+        return {
+            "type": "Reconnaissance",
+            "risk": "MEDIUM",
+            "explanation": "Scanning activity detected. Attacker is mapping open ports or services.",
+            "action": "Monitor traffic and restrict suspicious IPs."
+        }
+
+    elif "malware" in text or "exploit" in text:
+        return {
+            "type": "Malware Execution",
+            "risk": "CRITICAL",
+            "explanation": "Potential malware execution detected. Immediate action required.",
+            "action": "Isolate system and run antivirus scan."
+        }
+
+    return {
+        "type": "General Threat",
+        "risk": "LOW",
+        "explanation": "Suspicious activity detected but no strong attack pattern identified.",
+        "action": "Continue monitoring."
+    }
+    
+    
 @router.get("/progress")
 def get_progress(
     user=Depends(require_role("ADMIN", "ANALYST", "VIEWER"))

@@ -6,7 +6,7 @@ import { apiFetch, getLogs } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import HistoryPanel from '@/components/HistoryPanel';
-import { toast } from 'react-hot-toast/headless';
+import toast from 'react-hot-toast';
 
 type ParsedLog = {
   src_ip?: string;
@@ -136,6 +136,7 @@ export default function LogsPage() {
       return [];
     } catch (err) {
       console.error('Fetch logs error:', err);
+      toast.error('Failed to fetch logs');
       setLogs([]);
       return [];
     }

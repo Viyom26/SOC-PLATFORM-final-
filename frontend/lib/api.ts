@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+import toast from 'react-hot-toast';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
   if (typeof window === 'undefined') {
@@ -9,7 +10,7 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
 
   /* ===== SAFE URL NORMALIZATION ===== */
 
-  let safeUrl = url;
+  let safeUrl = url.trim().replace('✅', ''); // 🔥 FIX
 
   if (!safeUrl.startsWith('/')) {
     safeUrl = `/${safeUrl}`;
@@ -87,6 +88,8 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
 
     console.error('API error response:', errorText);
 
+    // 🔽 REPLACE THROW BLOCK
+    toast.error(errorText || 'API request failed');
     throw new Error(errorText || 'API request failed');
   }
 
