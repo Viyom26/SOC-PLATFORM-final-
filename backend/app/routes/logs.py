@@ -1,7 +1,9 @@
 from email.mime import message
+from fileinput import filename
 from gettext import find
 from logging import critical, log
 
+import tempfile
 import uuid
 import re
 import os
@@ -11,7 +13,6 @@ import asyncio
 from fastapi.concurrency import run_in_threadpool
 from datetime import datetime, time, timezone
 from typing import Optional
-from reportlab.lib import styles # pyright: ignore[reportMissingModuleSource]
 from sqlalchemy import or_
 from fastapi import APIRouter, Form, UploadFile, File, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -35,7 +36,6 @@ from app.services.automation_engine import auto_response
 from app.models import alert
 from fastapi import Body
 
-
 router = APIRouter(prefix="/logs", tags=["Logs"])
 
 DEFAULT_SOC_TARGET = "192.168.1.10"
@@ -57,8 +57,22 @@ MITRE_MAP = {
 }
 
 progress_store = {}
+
+
+
 # 🔥 EMAIL COOLDOWN STORE
 email_cooldown = {}
+
+# ================= SMART FILE TYPE DETECTION =================
+def detect_file_type(file_path, filename):
+    import zipfile
+
+    # ✅ Only treat as ZIP if extension is .zip
+    if filename.endswith(".zip") and zipfile.is_zipfile(file_path):
+        return "zip"
+
+    return "normal"
+# ================= END DETECTION =================
 
 def parse_timestamp(row):
     """
@@ -188,6 +202,13 @@ async def parse_logs(
 def process_logs(file_path, filename, username):
 
     db = SessionLocal()
+    zip_info = {
+        "zip_name": filename,
+        "file_count": 1
+    }
+    
+    print("📂 Processing file:", filename)
+    print("📁 Full path:", file_path)
 
     logs_to_add = []
     alerts_to_stream = []
@@ -202,12 +223,109 @@ def process_logs(file_path, filename, username):
         rows_cache = []
         total_rows = 0
         processed = 0
+        # ================= SMART ZIP SUPPORT =================
+        file_type = detect_file_type(file_path, filename)
 
+        if file_type == "zip":
+
+            print("📦 ZIP detected (AI detection)")
+
+            import zipfile
+            extracted_files = []
+
+            with tempfile.TemporaryDirectory() as temp_dir:
+                with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+
+                for root, _, files in os.walk(temp_dir):
+                    for name in files:
+                        inner_path = os.path.join(root, name)
+
+                        if not name.endswith((".xlsx", ".csv", ".json", ".log", ".txt")):
+                            continue
+
+                        print("📂 Processing inside ZIP:", name)
+
+                        extracted_files.append(name)
+                        if not name.endswith(".zip"):  # prevent recursion loop
+                            process_logs(inner_path, name, username)
+
+            zip_info["file_count"] = len(extracted_files)
+
+            if username not in progress_store:
+                progress_store[username] = {}
+
+            progress_store[username]["zip_info"] = zip_info
+
+            return
+# ================= END ZIP SUPPORT =================
+
+        rows = []
+        
         if filename.endswith(".xlsx"):
-            workbook = load_workbook(data_only=True, read_only=True, filename=file_path)
-            sheet = workbook.active
+            try:
+                import zipfile
 
-            rows = list(sheet.iter_rows(values_only=True)) # type: ignore
+                # ✅ REAL EXCEL
+                if zipfile.is_zipfile(file_path):
+                    print("✅ Real Excel detected")
+
+                    workbook = load_workbook(
+                        data_only=True,
+                        read_only=True,
+                        filename=file_path
+                    )
+                    sheet = workbook.active
+
+                    for i, row in enumerate(sheet.iter_rows(values_only=True)):
+                        if i == 0:
+                            headers = [str(h).lower().strip() if h else "" for h in row]
+                        else:
+                            rows_cache.append((headers, row))
+
+                else:
+                    print("⚠️ Not real XLSX → smart parsing")
+
+                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                        lines = f.readlines()
+
+                    if not lines:
+                        raise Exception("Empty file")
+
+                    # 🔥 DETECT DELIMITER
+                    sample = lines[0]
+
+                    if "," in sample:
+                        delimiter = ","
+                    elif "\t" in sample:
+                        delimiter = "\t"
+                    elif "|" in sample:
+                        delimiter = "|"
+                    else:
+                        delimiter = None
+
+                    if delimiter:
+                        print(f"✅ Detected delimiter: {delimiter}")
+
+                        reader = csv.reader(lines, delimiter=delimiter)
+                        rows = list(reader)
+
+                        headers = [str(h).lower().strip() for h in rows[0]]
+
+                        for row in rows[1:]:
+                            rows_cache.append((headers, row))
+                    else:
+                        print("⚠️ No delimiter → raw parsing")
+
+                        for line in lines:
+                            rows_cache.append([None, "LOW", None, None, line.strip()])
+
+            except Exception as e:
+                print("❌ All parsing failed → fallback raw:", file_path, e)
+
+                with open(file_path, encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        rows_cache.append([None, "LOW", None, None, line.strip()])
 
             if not rows:
                 return
@@ -817,17 +935,22 @@ def download_logs_pdf(
     styles["Title"].textColor = colors.aqua
 
     elements = []
-    
-    from reportlab.platypus import Spacer # type: ignore
+    # ================= ZIP INFO DISPLAY =================
+    zip_info = progress_store.get(user.get("sub"), {}).get("zip_info")
+
+    if zip_info:
+        elements.append(Spacer(1, 6))
+        elements.append(Paragraph(
+            f"<font color='#38bdf8'><b>📦 Uploaded File:</b> {zip_info.get('zip_name')}<br/>"
+            f"<b>📂 Files Extracted:</b> {zip_info.get('file_count')}</font>",
+            styles["Normal"]
+        ))
+        elements.append(Spacer(1, 10))
+# ================= END ZIP INFO =================
 
     elements.append(Spacer(1, 10))  # 🔥 small top padding (fix gap)
 
     # ================= BACKGROUND =================
-    from reportlab.platypus import Flowable # type: ignore
-
-    # 🔥 DARK BACKGROUND (HACKER STYLE)
-    from reportlab.platypus import Flowable # type: ignore
-
     class Background(Flowable):
         def draw(self):
             self.canv.setFillColorRGB(0.05, 0.07, 0.12)  # dark blue-black
@@ -1276,18 +1399,6 @@ def download_logs_pdf(
 
         print("📧 Sending to ADMIN:", fixed_admin_email)
 
-        # ✅ send to SOC mailbox
-        if user_email not in email_cooldown or now - email_cooldown[user_email] > 300:
-
-            send_email_with_pdf(
-                buffer.getvalue(),
-                fixed_admin_email,
-                email_summary,
-                top_attackers_list,
-                filter,
-                logs
-            )
-
         # 🔥 SEND ONLY ONCE (CLEAN FIX)
         recipients = [fixed_admin_email]
 
@@ -1343,6 +1454,20 @@ def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=
     msg["From"] = os.getenv("EMAIL_USER") or "soc.platform11@gmail.com"
     msg["To"] = recipient_email
 
+    # 🔥 ZIP INFO (ADD HERE)
+    zip_info = None
+    for user_data in progress_store.values():
+        if "zip_info" in user_data:
+            zip_info = user_data["zip_info"]
+            break
+
+    zip_html = ""
+    if zip_info:
+        zip_html = f"""
+        <h3 style="color:#38bdf8;">📦 ZIP Details</h3>
+        <p>File: {zip_info.get('zip_name')}</p>
+        <p>Extracted Files: {zip_info.get('file_count')}</p>
+        """
     # 🔥 TOP ATTACKERS HTML
     top_attackers_html = "<ul>"
 
@@ -1376,6 +1501,7 @@ def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=
             <div style="background:green; color:white; padding:10px;">LOW: {low}</div>
         </div>
 
+        {zip_html}
         <h3 style="margin-top:20px; color:#f97316;">Top Attackers</h3>
         {top_attackers_html}
 
