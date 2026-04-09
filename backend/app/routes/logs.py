@@ -13,6 +13,7 @@ import asyncio
 from fastapi.concurrency import run_in_threadpool
 from datetime import datetime, time, timezone
 from typing import Optional
+from reportlab.lib import styles
 from sqlalchemy import or_
 from fastapi import APIRouter, Form, UploadFile, File, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -35,7 +36,7 @@ from app.services.correlation_engine import correlate_alert
 from app.services.automation_engine import auto_response
 from app.models import alert
 from fastapi import Body
-
+from reportlab.lib.colors import HexColor
 router = APIRouter(prefix="/logs", tags=["Logs"])
 
 DEFAULT_SOC_TARGET = "192.168.1.10"
@@ -62,6 +63,27 @@ progress_store = {}
 
 # 🔥 EMAIL COOLDOWN STORE
 email_cooldown = {}
+
+# ================= GLOBAL SOC METRICS (FIX) =================
+def calculate_soc_metrics(logs):
+    severity_counts = {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0
+    }
+
+    for log in logs:
+        sev = (log.get("severity") or "LOW").upper()
+        if sev in severity_counts:
+            severity_counts[sev] += 1
+
+    return {
+        "total_logs": len(logs),
+        "incidents": len(logs),
+        "severity": severity_counts
+    }
+# ================= END =================
 
 # ================= SMART FILE TYPE DETECTION =================
 def detect_file_type(file_path, filename):
@@ -520,14 +542,18 @@ def process_logs(file_path, filename, username):
 
                 risk_score = risk_map.get(severity, 10)
 
-                # 🔥 ADD THIS BLOCK
+                # 🔥 FIXED INCIDENT LOGIC
                 status = "SAFE"
 
-                if severity in ["CRITICAL", "HIGH"]:
+                if severity in ["CRITICAL", "HIGH", "MEDIUM"]:
                     status = "THREAT"
                 elif severity == "MEDIUM":
                     status = "SUSPICIOUS"
+                else: 
+                    status = "SAFE"
 
+                # 🔥 CREATE INCIDENT FOR ALL SEVERITIES (MAIN FIX)
+                if severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
                     try:
                         create_alert(
                             db=db,
@@ -538,11 +564,10 @@ def process_logs(file_path, filename, username):
                             classification=row_text
                         )
 
-                        # 🔥 FIX: LOG = INCIDENT (NO GROUPING)
                         new_incident = Incident(
                             id=str(uuid.uuid4()),
                             source_ip=source_ip,
-                            severity=severity or "LOW",
+                            severity=severity,
                             status="OPEN",
                             created_at=event_time or datetime.now(timezone.utc),
                             alert_count=1
@@ -551,7 +576,7 @@ def process_logs(file_path, filename, username):
                         db.add(new_incident)
 
                     except Exception as e:
-                            print("Alert/Incident failed:", e)
+                        print("Alert/Incident failed:", e)
 
                 # MITRE
                 mitre_tactic = None
@@ -1024,17 +1049,20 @@ def download_logs_pdf(
     # ✅ FINAL INCIDENT FILTER
     print("🧪 SAMPLE LOG:", logs[0] if logs else "NO LOGS")
     print("🧪 SAMPLE TIME FIELD:", logs[0].get("created_at"), logs[0].get("event_time") if logs else "")
-    incidents = [
-        log for log in filtered_logs
-        if (log.get("severity") or "").upper() in ["MEDIUM", "HIGH", "CRITICAL"]
-    ]
+    # 🔥 USE ALL LOGS (FIX)
+    incidents = filtered_logs
     print("TOTAL LOGS RECEIVED:", len(logs))
     print("FILTERED LOGS:", len(filtered_logs))
     print("INCIDENTS:", len(incidents))
     
-    severity_counts = Counter(
-    log.get("severity", "LOW").upper() for log in incidents
-    )
+    # 🔥 NORMALIZE SEVERITY (IMPORTANT FIX)
+    for log in incidents:
+        if log.get("severity"):
+            log["severity"] = str(log["severity"]).upper()
+            
+    metrics = calculate_soc_metrics(incidents)
+    severity_counts = metrics["severity"]
+
     # 🔥 FIX: DEFINE email_summary
     email_summary = {
         "CRITICAL": severity_counts.get("CRITICAL", 0),
@@ -1072,10 +1100,10 @@ def download_logs_pdf(
     elements.append(Paragraph("<b>📄 Executive Summary</b>", styles["Heading2"]))
 
     summary_text = f"""
-    Total {len(incidents)} security incidents detected.
-    Majority are {severity_counts.get('MEDIUM',0)} medium-level threats.
-    No critical breaches observed.
-    System is stable but requires monitoring.
+    Total {metrics['incidents']} security incidents detected.
+    Critical: {metrics['severity']['CRITICAL']}, High: {metrics['severity']['HIGH']},
+    Medium: {metrics['severity']['MEDIUM']}, Low: {metrics['severity']['LOW']}.
+    Threat distribution matches live dashboard data.
     """
 
     elements.append(Paragraph(summary_text, styles["Normal"]))
@@ -1118,24 +1146,27 @@ def download_logs_pdf(
     top_ips = ip_counts.most_common(5)
 
     # ================= AI ANALYSIS =================
-    ai_text = "No major threats detected."
+    # ✅ AI BASED ON METRICS (FIX)
+    ai_text = "System operating normally."
 
-    if severity_counts.get("CRITICAL", 0) > 0:
+    if metrics["severity"]["CRITICAL"] > 0:
         ai_text = "Critical threats detected. Immediate action required."
-    elif severity_counts.get("HIGH", 0) > 0:
-        ai_text = "High-risk activity observed. Investigation recommended."
-    elif severity_counts.get("MEDIUM", 0) > 0:
-        ai_text = "Moderate suspicious activity detected. Monitor closely."
-    else:
-        ai_text = "System operating normally."
+    elif metrics["severity"]["HIGH"] > 0:
+        ai_text = "High risk attacks detected. Immediate investigation required."
+    elif metrics["severity"]["MEDIUM"] > 0:
+        ai_text = "Moderate suspicious activity detected."
+    elif metrics["severity"]["LOW"] > 0:
+        ai_text = "Low-level activity detected. System stable."
 
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(
         "<font color='#00ffff'><b>🧠 AI Threat Analysis</b></font>",
         styles["Heading2"]
     ))
+    # ✅ USE ai_text (FIX WARNING)
+    elements.append(Paragraph(ai_text, styles["Normal"]))
 
-    primary_threat = max(severity_counts.keys(), key=lambda k: severity_counts[k]) if severity_counts else "None"
+    primary_threat = max(metrics["severity"], key=lambda k: metrics["severity"][k]) if metrics else "None"
 
     detailed_ai = f"""
     The system analyzed {len(filtered_logs)} logs and identified {len(incidents)} threats.
@@ -1160,36 +1191,68 @@ def download_logs_pdf(
     
     # ================= CHART =================
     elements.append(Paragraph("<b>📈 Threat Distribution</b>", styles["Heading2"]))
-    chart_data = [
-        severity_counts.get("CRITICAL", 0),
-        severity_counts.get("HIGH", 0),
-        severity_counts.get("MEDIUM", 0),
-    ]
 
     drawing = Drawing(400, 200)
-    chart = VerticalBarChart()
 
-    chart.x = 50
-    chart.y = 30
-    chart.height = 125
-    chart.width = 300
-    chart.data = [[
-        max(1, severity_counts.get("CRITICAL", 0)),
-        max(1, severity_counts.get("HIGH", 0)),
-        max(1, severity_counts.get("MEDIUM", 0))
-    ]]
-    chart.valueAxis.valueMax = max(chart_data) + 10
-    chart.valueAxis.valueStep = max(1, int(max(chart_data) / 5))
-    chart.bars[0].fillColor = colors.HexColor("#38bdf8")  # clean blue (enterprise look)
-    chart.bars[1].fillColor = colors.HexColor("#f97316")  # orange (enterprise look)
-    chart.bars[2].fillColor = colors.HexColor("#eab308")  # yellow (enterprise look)
+    # ✅ EXACT DASHBOARD ORDER
+    data_values = [
+        metrics["severity"]["CRITICAL"],
+        metrics["severity"]["HIGH"],
+        metrics["severity"]["MEDIUM"],
+        metrics["severity"]["LOW"]
+    ]
 
-    chart.categoryAxis.categoryNames = ["Critical", "High", "Medium"]
+    max_val = max(data_values) or 1 if max(data_values) > 0 else 1
 
-    drawing.add(chart)
+    from reportlab.graphics.shapes import Rect, String
+
+    bar_width = 40
+    gap = 30
+    start_x = 60
+
+    colors_list = [
+        "#ff0000",
+        "#ffa500",
+        "#ffff00",
+        "#00ff00"
+    ]
+
+    labels = ["Critical", "High", "Medium", "Low"]
+
+    for i, val in enumerate(data_values):
+        height = (val / max_val) * 150 if val > 0 else 10
+
+        # bar
+        rect = Rect(
+            start_x + i * (bar_width + gap),
+            60,
+            bar_width,
+            height,
+            fillColor=HexColor(colors_list[i]) # type: ignore
+        )
+        drawing.add(rect)
+
+        # label
+        drawing.add(String(
+            start_x + i * (bar_width + gap),
+            30,
+            labels[i],
+            fontSize=8,
+            fillColor=colors.white
+        ))
+
+        # value
+        drawing.add(String(
+            start_x + i * (bar_width + gap),
+            70 + height,
+            str(val),
+            fontSize=8,
+            fillColor=colors.white
+        ))
+
     elements.append(drawing)
 
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 30))
     
     elements.append(Paragraph("<b>🕒 Attack Timeline</b>", styles["Heading2"]))
 
@@ -1289,12 +1352,13 @@ def download_logs_pdf(
         
         elements.append(Paragraph("<b>🔥 Risk Heat Distribution</b>", styles["Heading2"]))
 
-    risk_counts = {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}
-
-    for log in incidents:
-        sev = log.get("severity", "LOW").upper()
-        if sev in risk_counts:
-            risk_counts[sev] += 1
+    # ✅ USE SAME METRICS (FIX)
+    risk_counts = {
+        "LOW": metrics["severity"]["LOW"],
+        "MEDIUM": metrics["severity"]["MEDIUM"],
+        "HIGH": metrics["severity"]["HIGH"],
+        "CRITICAL": metrics["severity"]["CRITICAL"],
+    }
 
     heat_data = [[
         "LOW", "MEDIUM", "HIGH", "CRITICAL"
@@ -1393,22 +1457,14 @@ def download_logs_pdf(
         print("⏸ Skipping email (cooldown active)")
     else:
         email_cooldown[user_email] = now
-    # 🔥 AUTO EMAIL SEND
+    # 🔥 AUTO EMAIL SEND (ONLY LOGGED-IN USER)
     try:
-        fixed_admin_email = "soc.platform11@gmail.com"
+        if user_email:
+            print("📧 Sending email to logged-in user:", user_email)
 
-        print("📧 Sending to ADMIN:", fixed_admin_email)
-
-        # 🔥 SEND ONLY ONCE (CLEAN FIX)
-        recipients = [fixed_admin_email]
-
-        if user_email and user_email != fixed_admin_email:
-            recipients.append(user_email)
-
-        for email in recipients:
             send_email_with_pdf(
                 buffer.getvalue(),
-                email,
+                user_email,
                 email_summary,
                 top_attackers_list,
                 filter,
@@ -1574,13 +1630,11 @@ def send_email_with_pdf(pdf_bytes, recipient_email, summary=None, top_attackers=
             actual_logs = logs
         else:
             actual_logs = []
-        # 🔥 SUMMARY CALCULATION
-        from collections import Counter
-
-        severity_counts = Counter(
-            (log.get("severity") or "LOW").upper()
-            for log in actual_logs
-        )
+        
+        metrics = calculate_soc_metrics(actual_logs)
+        severity_counts = metrics["severity"]
+        # ================= END =================
+        # ✅ USE CENTRAL METRICS (FIX)
 
         summary_ws.append(["Metric", "Value"])
         summary_ws.append(["Total Logs", len(actual_logs)])
