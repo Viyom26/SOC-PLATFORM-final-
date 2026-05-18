@@ -71,31 +71,26 @@ export default function Sidebar() {
         {
           name: 'Dashboard',
           path: '/dashboard',
-          icon: '🏠',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
         {
           name: 'Command Center',
           path: '/command-center',
-          icon: '🎯',
           roles: ['ADMIN'],
         },
         {
           name: 'Attack Map',
           path: '/attack-map',
-          icon: '🌐',
           roles: ['ADMIN', 'ANALYST'],
         },
         {
           name: 'Geo Map',
           path: '/geo-map',
-          icon: '🗺️',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
         {
           name: 'Country Heatmap',
           path: '/country-heatmap',
-          icon: '🌍',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
       ],
@@ -107,31 +102,26 @@ export default function Sidebar() {
         {
           name: 'Logs',
           path: '/logs',
-          icon: '📜',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
         {
           name: 'Alerts',
           path: '/alerts',
-          icon: '🚨',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
         {
           name: 'Incidents',
           path: '/incidents',
-          icon: '📂',
           roles: ['ADMIN', 'ANALYST'],
         },
         {
           name: 'Live Network',
           path: '/live-network',
-          icon: '📡',
           roles: ['ADMIN', 'ANALYST'],
         },
         {
           name: 'Live Attack Stream',
           path: '/live-attacks',
-          icon: '⚡',
           roles: ['ADMIN', 'ANALYST'],
         },
       ],
@@ -143,19 +133,16 @@ export default function Sidebar() {
         {
           name: 'Threat Intel',
           path: '/threat-intel',
-          icon: '📊',
           roles: ['ADMIN', 'ANALYST'],
         },
         {
           name: 'MITRE Map',
           path: '/mitre-map',
-          icon: '🧬',
           roles: ['ADMIN', 'ANALYST'],
         },
         {
           name: 'IP Analyzer',
           path: '/ip-analyzer',
-          icon: '🧠',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
 
@@ -163,13 +150,11 @@ export default function Sidebar() {
         {
           name: 'Threat Hunting',
           path: '/hunting',
-          icon: '🕵️',
           roles: ['ADMIN', 'ANALYST'],
         },
         {
           name: 'Advanced Search',
           path: '/search',
-          icon: '🔍',
           roles: ['ADMIN', 'ANALYST', 'VIEWER'],
         },
       ],
@@ -181,7 +166,6 @@ export default function Sidebar() {
         {
           name: 'Attack Timeline',
           path: '/attack-timeline',
-          icon: '⏱',
           roles: ['ADMIN', 'ANALYST'],
         },
       ],
@@ -193,13 +177,11 @@ export default function Sidebar() {
         {
           name: 'Compliance Reports',
           path: '/compliance',
-          icon: '📑',
           roles: ['ADMIN'],
         },
         {
           name: 'Audit Logs',
           path: '/audit-logs',
-          icon: '📁',
           roles: ['ADMIN'],
         },
 
@@ -207,7 +189,6 @@ export default function Sidebar() {
         {
           name: 'Assets',
           path: '/assets',
-          icon: '💻',
           roles: ['ADMIN', 'ANALYST'],
         },
       ],
@@ -219,7 +200,6 @@ export default function Sidebar() {
         {
           name: 'AI Prediction',
           path: '/ai-prediction',
-          icon: '🤖',
           roles: ['ADMIN'],
         },
       ],
@@ -289,8 +269,6 @@ export default function Sidebar() {
                           active ? 'sidebar-link active' : 'sidebar-link'
                         }
                       >
-                        <span>{item.icon}</span>
-
                         {!collapsed && <span>{item.name}</span>}
                       </Link>
                     );
